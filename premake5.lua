@@ -14,12 +14,13 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Include directories relative to root folder (solution directory)
 IncludeDir = {}
+IncludeDir["GLFW"] = "FluidSimulator/vendor/GLFW/include"
+IncludeDir["glad"] = "FluidSimulator/vendor/glad/include"
 
---[[
 group "Dependencies"
-    include
+    include "FluidSimulator/vendor/GLFW"
+    include "FluidSimulator/vendor/glad"
 group ""
-]]
 
 project "FluidSimulator"
     location "FluidSimulator"
@@ -45,27 +46,27 @@ files
     }
 ]]
 
---[[
-    defines{
-
-    }
-]]
-
-
 includedirs
 {
     "%{prj.name}/src",
+    "%{IncludeDir.GLFW}",
+    "%{IncludeDir.glad}",
 }
 
-
---[[
-    links{
-
-    }
-]]
+links
+{
+    "GLFW",
+    "glad",
+    "opengl32.lib",
+}
 
 filter "system:windows"
     systemversion "latest"
+
+    defines
+    {
+        "GLFW_INCLUDE_NONE"
+    }
 
     filter "configurations:Debug"
         defines {"DEBUG"}

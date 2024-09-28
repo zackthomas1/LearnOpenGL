@@ -2,7 +2,7 @@
 .vs/
 bin/
 bin-int/
-FluidSimulator/vendor/
+# FluidSimulator/vendor/
 
 #Files 
 *.user
