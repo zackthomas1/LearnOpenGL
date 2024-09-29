@@ -1,7 +1,7 @@
 --premake5.lua 
-workspace "FluidSimulator" 
+workspace "ToyEngine" 
     architecture "x64"
-    startproject "FluidSimulator"
+    startproject "ToyEngine"
 
     configurations 
     { 
@@ -14,16 +14,16 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Include directories relative to root folder (solution directory)
 IncludeDir = {}
-IncludeDir["GLFW"] = "FluidSimulator/vendor/GLFW/include"
-IncludeDir["glad"] = "FluidSimulator/vendor/glad/include"
+IncludeDir["GLFW"] = "ToyEngine/vendor/GLFW/include"
+IncludeDir["glad"] = "ToyEngine/vendor/glad/include"
 
 group "Dependencies"
-    include "FluidSimulator/vendor/GLFW"
-    include "FluidSimulator/vendor/glad"
+    include "ToyEngine/vendor/GLFW"
+    include "ToyEngine/vendor/glad"
 group ""
 
-project "FluidSimulator"
-    location "FluidSimulator"
+project "ToyEngine"
+    location "ToyEngine"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
