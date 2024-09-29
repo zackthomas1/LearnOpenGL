@@ -1,3 +1,0 @@
-[submodule "FluidSimulator/vendor/GLFW"]
-	path = FluidSimulator/vendor/GLFW
-	url = https://github.com/zackthomas1/glfw.git
