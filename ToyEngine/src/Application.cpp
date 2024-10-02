@@ -1,6 +1,7 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "stb_image.h"
 
 #include "shader_s.h"
 
@@ -24,10 +25,9 @@ int main(void) {
 	// specify vertex data  
 	float vertices[] = {
 		// positions		// colors
-		 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f,	// top right
+		 0.0f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f,	// top 
 		 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,	// bottom right
 		-0.5f, -0.5f, 0.0f,	0.0f, 0.0f, 1.0f,	// bottom left
-		-0.5f,  0.5f, 0.0f,	0.0f, 0.0f, 0.0f,	// top left
 	}; 
 
 	// create Vertex Buffer Object (VBO)
@@ -45,10 +45,22 @@ int main(void) {
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))); 
 	glEnableVertexAttribArray(1);
 
+	//
+	float textcoords[] = {
+		0.0f, 0.0f,		// lower-left corner  
+		1.0f, 0.0f,		// lower-right corner 
+		0.5f, 1.0f,		// top-center corner
+	};
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT); 
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
 	//  Element Buffer Object (EBO)
 	unsigned int indices[] = {
-		0,1,3,	// first triangle
-		1,2,3,	// second triangle
+		0,1,2,	// first triangle
 	};
 
 	unsigned int EBO; 
@@ -73,11 +85,12 @@ int main(void) {
 
 		shader.use();
 		shader.setFloat4("ourColor", brightnessValue, brightnessValue, brightnessValue, 1.0f);
+		shader.setFloat("xOffset", 0.1f);
 		
 		//
 		glBindVertexArray(VAO); 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
 		// check and call events and swap buffers
 		glfwPollEvents();
