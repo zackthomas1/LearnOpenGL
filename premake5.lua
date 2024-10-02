@@ -16,6 +16,8 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 IncludeDir = {}
 IncludeDir["GLFW"] = "ToyEngine/vendor/GLFW/include"
 IncludeDir["glad"] = "ToyEngine/vendor/glad/include"
+IncludeDir["stb"] = "ToyEngine/vendor/stb"
+
 
 group "Dependencies"
     include "ToyEngine/vendor/GLFW"
@@ -51,6 +53,7 @@ includedirs
     "%{prj.name}/src",
     "%{IncludeDir.GLFW}",
     "%{IncludeDir.glad}",
+    "%{IncludeDir.stb}"
 }
 
 links

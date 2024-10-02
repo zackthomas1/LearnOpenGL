@@ -1,3 +1,6 @@
 [submodule "ToyEngine/vendor/GLFW"]
 	path = ToyEngine/vendor/GLFW
 	url = https://github.com/zackthomas1/glfw.git
+[submodule "ToyEngine/vendor/stb"]
+	path = ToyEngine/vendor/stb
+	url = https://github.com/nothings/stb.git
