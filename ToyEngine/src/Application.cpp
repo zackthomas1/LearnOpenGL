@@ -8,17 +8,18 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "shader_s.h"
+#include "texture_2d.h"
 
 // Declare functions
-void processInput(GLFWwindow* window);
+void ProcessInput(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-GLFWwindow* createGLFWWindow();
+GLFWwindow* CreateGLFWWindow();
 
 // Declare constants
-const unsigned int c_WIDTH = 800;
-const unsigned int c_HEIGHT = 600;
+const unsigned int kWidth = 800;
+const unsigned int kHeight = 600;
 
 // uniform variables 
 // adjust texture coordinates in fragment shader
@@ -31,7 +32,7 @@ int main(void) {
 	std::cout << "Hello OpenGL" << std::endl;
 
 	// Create window
-	GLFWwindow* window = createGLFWWindow();
+	GLFWwindow* window = CreateGLFWWindow();
 	if (window == nullptr)
 		return -1;
 
@@ -39,9 +40,9 @@ int main(void) {
 	Shader shader("../assets/shaders/hello_triangle.vs", "../assets/shaders/hello_triangle.fs");
 
 	// generate vertex array object (VAO) to store vertex attributes
-	unsigned int VAO; 
-	glGenVertexArrays(1, &VAO); 
-	glBindVertexArray(VAO);
+	unsigned int vao; 
+	glGenVertexArrays(1, &vao); 
+	glBindVertexArray(vao);
 
 	// specify vertex data  
 	float vertices[] = {
@@ -53,10 +54,10 @@ int main(void) {
 	}; 
 
 	// create Vertex Buffer Object (VBO)
-	unsigned int VBO; 
-	glGenBuffers(1, &VBO);
+	unsigned int vbo; 
+	glGenBuffers(1, &vbo);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO); 
+	glBindBuffer(GL_ARRAY_BUFFER, vbo); 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); 
 
 	// position attribute
@@ -77,72 +78,29 @@ int main(void) {
 		1,2,3,	// second triangle
 	};
 
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
+	unsigned int ebo;
+	glGenBuffers(1, &ebo);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	// texture 0
+	// generate textures
 	// ---------
-	unsigned int texture0;
-	glGenTextures(1, &texture0);
-	glBindTexture(GL_TEXTURE_2D, texture0);
+	Texture2D container_tex("../assets/textures/container.jpg");
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	//load image data
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load("../assets/textures/container.jpg", &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
-
-	// texture 1
-	// ---------
-
-	unsigned int texture1;
-	glGenTextures(1, &texture1); 
-	glBindTexture(GL_TEXTURE_2D, texture1); 
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	stbi_set_flip_vertically_on_load(true);
-	data = stbi_load("../assets/textures/awesomeface.png", &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
+	Texture2D awesome_face_tex("../assets/textures/awesomeface.png", true);
+	awesome_face_tex.SetParameters(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 
 	// tell openGL which texture unit each sampler belongs. (only done once)
-	shader.use();
-	glUniform1i(glGetUniformLocation(shader.ID, "imgTex0"), 0);	// manually 
-	shader.setInt("imgTex1", 1);	// via texture class
+	shader.Use();
+	glUniform1i(glGetUniformLocation(shader.id(), "imgTex0"), 0);	// manually 
+	shader.SetInt("imgTex1", awesome_face_tex.id() - 1);	// via texture class
 
 	// Render loop 
 	while (!glfwWindowShouldClose(window))
 	{
 		// input
-		processInput(window);
+		ProcessInput(window);
 
 		// rendering commands 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -152,21 +110,19 @@ int main(void) {
 		float timeValue = glfwGetTime();
 		float brightnessValue = (sin(timeValue) / 2.0f) + 0.5f;
 
-		shader.setFloat4("periodicBrightness", brightnessValue, brightnessValue, brightnessValue, 1.0f);
-		shader.setFloat("alpha_tex", alpha_tex);
-		shader.setFloat2("pos_tex", x_pos_tex, y_pos_tex);
-		shader.setFloat("scale_tex", scale_tex);
+		shader.SetFloat4("periodicBrightness", brightnessValue, brightnessValue, brightnessValue, 1.0f);
+		shader.SetFloat("alpha_tex", alpha_tex);
+		shader.SetFloat2("pos_tex", x_pos_tex, y_pos_tex);
+		shader.SetFloat("scale_tex", scale_tex);
 		
 		// bind texture on corresponding texture units
-		glActiveTexture(GL_TEXTURE0); // activate texture unit before binding
-		glBindTexture(GL_TEXTURE_2D, texture0);
-		glActiveTexture(GL_TEXTURE1); 
-		glBindTexture(GL_TEXTURE_2D, texture1);
+		container_tex.Activate();
+		awesome_face_tex.Activate();
 
 		// render 
-		shader.use();
-		glBindVertexArray(VAO); 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		shader.Use();
+		glBindVertexArray(vao); 
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// check and call events and swap buffers
@@ -175,16 +131,16 @@ int main(void) {
 	}
 
 	// optional: de-allocate all resources 
-	glDeleteVertexArrays(1, &VAO); 
-	glDeleteBuffers(1, &VBO); 
-	glDeleteBuffers(1, &EBO);
+	glDeleteVertexArrays(1, &vao); 
+	glDeleteBuffers(1, &vbo); 
+	glDeleteBuffers(1, &ebo);
 
 	// Terminate window
 	glfwTerminate(); 
 	return 0;
 }
 
-void processInput(GLFWwindow* window)
+void ProcessInput(GLFWwindow* window)
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) 
 	{
@@ -258,7 +214,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-GLFWwindow* createGLFWWindow()
+GLFWwindow* CreateGLFWWindow()
 {
 	// Initialize GLFW
 	glfwInit();
@@ -272,7 +228,7 @@ GLFWwindow* createGLFWWindow()
 #endif
 
 	// Create GLFW Window Object
-	GLFWwindow* window = glfwCreateWindow(c_WIDTH, c_HEIGHT, "OpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "OpenGL", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -293,7 +249,7 @@ GLFWwindow* createGLFWWindow()
 	}
 
 	// Set rendering window size 
-	glViewport(0, 0, c_WIDTH, c_HEIGHT);
+	glViewport(0, 0, kWidth, kHeight);
 
 	return window;
 }
