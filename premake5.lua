@@ -70,6 +70,7 @@ filter "system:windows"
     defines
     {
         "GLFW_INCLUDE_NONE"
+        "PLATFORM_WINDOWS"
     }
 
     filter "configurations:Debug"
