@@ -8,6 +8,8 @@ out vec4 vertexColor;
 out vec4 vertexPosition;
 out vec2 TexCoord;
 
+uniform mat4 transform;
+
 void main()
 {
 	// pass uniforms to fragment shader
@@ -15,5 +17,5 @@ void main()
 	vertexPosition = vec4(aPos.x, aPos.y, aPos.z, 1.0);; 
 	TexCoord = aTexCoord;
 
-	gl_Position = vec4(aPos.x , aPos.y, aPos.z, 1.0);
+	gl_Position = transform * vec4(aPos.x , aPos.y, aPos.z, 1.0);
 }

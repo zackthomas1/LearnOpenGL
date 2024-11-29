@@ -6,7 +6,7 @@ in vec4 vertexColor;
 in vec4 vertexPosition;
 in vec2 TexCoord;
 
-uniform vec4 periodicBrightness;
+uniform vec4 periodic_brightness;
 uniform float alpha_tex;
 uniform vec2 pos_tex; 
 uniform float scale_tex;

@@ -3,7 +3,6 @@
 
 #include <glad/glad.h>
 
-
 Shader::Shader(const char* vertex_path, const char* fragment_path)
 {
 	// read shader from file
@@ -41,6 +40,12 @@ void Shader::SetFloat4(const std::string& name, float v1, float v2, float v3, fl
 {
 	glUniform4f(glGetUniformLocation(id_, name.c_str()), v1, v2, v3, v4);
 }
+
+void Shader::SetMat4(const std::string& name, glm::mat4 value)
+{
+	glUniformMatrix4fv(glGetUniformLocation(id_, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+}
+
 
 std::string Shader::ReadSourceFile(const char* path)
 {

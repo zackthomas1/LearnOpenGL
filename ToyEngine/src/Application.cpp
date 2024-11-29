@@ -1,4 +1,5 @@
-#include <iostream>
+#include "pch.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "stb_image.h"
@@ -93,7 +94,7 @@ int main(void) {
 
 	// tell openGL which texture unit each sampler belongs. (only done once)
 	shader.Use();
-	glUniform1i(glGetUniformLocation(shader.id(), "imgTex0"), 0);	// manually 
+	shader.SetInt("imgTex0", 0);
 	shader.SetInt("imgTex1", awesome_face_tex.id() - 1);	// via texture class
 
 	// Render loop 
@@ -106,23 +107,47 @@ int main(void) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT); 
 
-		// set uniforms
-		float timeValue = glfwGetTime();
-		float brightnessValue = (sin(timeValue) / 2.0f) + 0.5f;
-
-		shader.SetFloat4("periodicBrightness", brightnessValue, brightnessValue, brightnessValue, 1.0f);
-		shader.SetFloat("alpha_tex", alpha_tex);
-		shader.SetFloat2("pos_tex", x_pos_tex, y_pos_tex);
-		shader.SetFloat("scale_tex", scale_tex);
-		
 		// bind texture on corresponding texture units
 		container_tex.Activate();
 		awesome_face_tex.Activate();
 
-		// render 
+		// update time values
+		float timeValue = glfwGetTime();
+		float periodic_cycle = (sin(timeValue) / 2.0f) + 0.5f;
+
+		// set uniforms used in fragment shader
+		shader.SetFloat4("periodic_brightness", periodic_cycle, periodic_cycle, periodic_cycle, 1.0f);
+		shader.SetFloat("alpha_tex", alpha_tex);
+		shader.SetFloat2("pos_tex", x_pos_tex, y_pos_tex);
+		shader.SetFloat("scale_tex", scale_tex);
+
+		//Update square transforms every frame using glm  
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+		trans = glm::rotate(trans, timeValue, glm::vec3(0.0f, 0.0f, 1.0f));
+		trans = glm::scale(trans, glm::vec3(0.75f, 0.75f, 1.0f));
+
+		// set uniforms for container 1
+		shader.SetMat4("transform", trans);
+		
+		// set shader program
 		shader.Use();
+
+		// draw call container 1
 		glBindVertexArray(vao); 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		// set uniforms for container 2
+		trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, glm::vec3(-0.5f, 0.5f, 0.0f));
+		trans = glm::scale(trans, glm::vec3(periodic_cycle, periodic_cycle, 1.0f));
+
+		// set uniforms container 2
+		shader.SetMat4("transform", trans);
+
+		// draw call container 1
+
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// check and call events and swap buffers
