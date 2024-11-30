@@ -33,8 +33,8 @@ project "ToyEngine"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
---pchheader 
---pchsource
+	pchheader "pch.h"
+	pchsource "ToyEngine/src/pch.cpp"
 
 files
 {
@@ -69,7 +69,7 @@ filter "system:windows"
 
     defines
     {
-        "GLFW_INCLUDE_NONE"
+        "GLFW_INCLUDE_NONE",
         "PLATFORM_WINDOWS"
     }
 
