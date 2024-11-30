@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
 
 #include "shader_s.h"
 #include "texture_2d.h"
@@ -60,6 +62,31 @@ int main(void) {
 	// create shader program
 	ToyEngine::Shader shader("../assets/shaders/hello_triangle.vs", "../assets/shaders/hello_triangle.fs");
 
+	// create camera 
+	glm::vec3 camera_position = glm::vec3(0.0, 1.0, 3.0);
+	glm::vec3 camera_lookat_target = glm::vec3(0.0, 0.0, 0.0); 
+	glm::vec3 camera_view_direction = glm::normalize(camera_position - camera_lookat_target);
+	glm::vec3 world_up = glm::vec3(0.0, 1.0, 0.0); 
+	glm::vec3 camera_right = glm::normalize(glm::cross(world_up, camera_view_direction));
+	glm::vec3 camera_up = glm::cross(camera_view_direction, camera_right);
+
+	glm::mat4 look_at_rotation = glm::mat4(glm::vec4(camera_right, 0.0),
+		glm::vec4(camera_up, 0.0),
+		glm::vec4(camera_view_direction, 0.0),
+		glm::vec4(0.0, 0.0, 0.0, 1.0));
+	look_at_rotation = glm::transpose(look_at_rotation);
+	glm::mat4 look_at_translation = glm::mat4(glm::vec4(1.0, 0.0, 0.0, 0.0),
+		glm::vec4(0.0, 1.0, 0.0, 0.0),
+		glm::vec4(0.0, 0.0, 1.0, 0.0),
+		glm::vec4((- 1.0f * camera_position), 1.0));
+
+	glm::mat4 look_at = look_at_rotation * look_at_translation;
+
+	const float kRadius = 10.0f;
+	float camera_x, camera_z;
+	glm::mat4 view = glm::lookAt(camera_position, camera_lookat_target, world_up);
+	std::cout << glm::to_string(view) << std::endl;
+
 	// define vertex data  
 	ToyEngine::Plane plane;
 	ToyEngine::Cube cube;
@@ -94,8 +121,6 @@ int main(void) {
 		float time_value = glfwGetTime();
 		float periodic_cycle = (sin(time_value) / 2.0f) + 0.5f;
 
-		// set shader program
-		shader.Use();
 
 		// set uniforms used in fragment shader
 		shader.SetFloat4("periodic_brightness", periodic_cycle, periodic_cycle, periodic_cycle, 1.0f);
@@ -104,8 +129,10 @@ int main(void) {
 		shader.SetFloat("scale_tex", scale_tex);
 
 		//Update view, projection matrices
-		view = glm::mat4(1.0f);
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		// update camera
+		camera_x = cos(time_value) * kRadius;
+		camera_z = sin(time_value) * kRadius;
+		view = glm::lookAt(glm::vec3(camera_x, 0.0, camera_z), camera_lookat_target, world_up);
 
 		projection = glm::mat4(1.0f);
 		projection = glm::perspective(glm::radians(45.0f), (float)kWidth / (float)kHeight, 0.1f, 100.0f);
