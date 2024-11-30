@@ -36,6 +36,19 @@ glm::mat4 model = glm::mat4(1.0f);
 glm::mat4 view = glm::mat4(1.0f); 
 glm::mat4 projection = glm::mat4(1.0f);
 
+glm::vec3 cube_positions[] = {
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
+};
+
 int main(void) {
 	std::cout << "Hello OpenGL" << std::endl;
 
@@ -81,34 +94,44 @@ int main(void) {
 		float time_value = glfwGetTime();
 		float periodic_cycle = (sin(time_value) / 2.0f) + 0.5f;
 
+		// set shader program
+		shader.Use();
+
 		// set uniforms used in fragment shader
 		shader.SetFloat4("periodic_brightness", periodic_cycle, periodic_cycle, periodic_cycle, 1.0f);
 		shader.SetFloat("alpha_tex", alpha_tex);
 		shader.SetFloat2("pos_tex", x_pos_tex, y_pos_tex);
 		shader.SetFloat("scale_tex", scale_tex);
 
-		//Update model, view, projection matrices
-		model = glm::mat4(1.0f);
-		model = glm::rotate(model, time_value * glm::radians(25.0f), glm::vec3(1.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(1.75f, 1.75f, 1.75f));
-
+		//Update view, projection matrices
 		view = glm::mat4(1.0f);
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
 		projection = glm::mat4(1.0f);
 		projection = glm::perspective(glm::radians(45.0f), (float)kWidth / (float)kHeight, 0.1f, 100.0f);
 
 		// set uniforms 
-		shader.SetMat4("model", model);
 		shader.SetMat4("view", view); 
 		shader.SetMat4("projection", projection);
-		
-		// set shader program
-		shader.Use();
 
 		// draw call cube
-		//plane.Draw();
-		cube.Draw();
+		for (int i = 0; i < sizeof(cube_positions) / sizeof(glm::vec3); i++)
+		{
+			// Update model
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, cube_positions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			
+			if (i % 3 == 0) 
+			{
+				model = glm::rotate(model, time_value * glm::radians(25.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+			}
+			model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+			
+			shader.SetMat4("model", model);
+			cube.Draw();
+		}
 
 		// check and call events and swap buffers
 		glfwPollEvents();
