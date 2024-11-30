@@ -10,6 +10,8 @@
 
 #include "shader_s.h"
 #include "texture_2d.h"
+#include "primatives/cube.h"
+#include "primatives/plane.h"
 
 // Declare functions
 void ProcessInput(GLFWwindow* window);
@@ -29,6 +31,11 @@ float x_pos_tex = 0.0;
 float y_pos_tex = 0.0; 
 float scale_tex = 1.0;
 
+//
+glm::mat4 model = glm::mat4(1.0f); 
+glm::mat4 view = glm::mat4(1.0f); 
+glm::mat4 projection = glm::mat4(1.0f);
+
 int main(void) {
 	std::cout << "Hello OpenGL" << std::endl;
 
@@ -38,58 +45,16 @@ int main(void) {
 		return -1;
 
 	// create shader program
-	Shader shader("../assets/shaders/hello_triangle.vs", "../assets/shaders/hello_triangle.fs");
+	ToyEngine::Shader shader("../assets/shaders/hello_triangle.vs", "../assets/shaders/hello_triangle.fs");
 
-	// generate vertex array object (VAO) to store vertex attributes
-	unsigned int vao; 
-	glGenVertexArrays(1, &vao); 
-	glBindVertexArray(vao);
-
-	// specify vertex data  
-	float vertices[] = {
-		// positions			// colors			// uv
-		 0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	1.0f, 1.0f,	// top right 
-		 0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	1.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	0.0f, 0.0f, // bottom left
-		-0.5f,  0.5f, 0.0f,		1.0f, 1.0f, 0.0f,	0.0f, 1.0f	// top left
-	}; 
-
-	// create Vertex Buffer Object (VBO)
-	unsigned int vbo; 
-	glGenBuffers(1, &vbo);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo); 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); 
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); 
-	glEnableVertexAttribArray(0); 
-
-	// color attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); 
-	glEnableVertexAttribArray(1);
-
-	// uv attribute 
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	//  Element Buffer Object (EBO)
-	unsigned int indices[] = {
-		0,1,3,	// first triangle
-		1,2,3,	// second triangle
-	};
-
-	unsigned int ebo;
-	glGenBuffers(1, &ebo);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	// define vertex data  
+	ToyEngine::Plane plane;
+	ToyEngine::Cube cube;
 
 	// generate textures
 	// ---------
-	Texture2D container_tex("../assets/textures/container.jpg");
-
-	Texture2D awesome_face_tex("../assets/textures/awesomeface.png", true);
+	ToyEngine::Texture2D container_tex("../assets/textures/container.jpg");
+	ToyEngine::Texture2D awesome_face_tex("../assets/textures/awesomeface.png", true);
 	awesome_face_tex.SetParameters(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 
 	// tell openGL which texture unit each sampler belongs. (only done once)
@@ -104,16 +69,17 @@ int main(void) {
 		ProcessInput(window);
 
 		// rendering commands 
+		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT); 
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// bind texture on corresponding texture units
 		container_tex.Activate();
 		awesome_face_tex.Activate();
 
 		// update time values
-		float timeValue = glfwGetTime();
-		float periodic_cycle = (sin(timeValue) / 2.0f) + 0.5f;
+		float time_value = glfwGetTime();
+		float periodic_cycle = (sin(time_value) / 2.0f) + 0.5f;
 
 		// set uniforms used in fragment shader
 		shader.SetFloat4("periodic_brightness", periodic_cycle, periodic_cycle, periodic_cycle, 1.0f);
@@ -121,44 +87,33 @@ int main(void) {
 		shader.SetFloat2("pos_tex", x_pos_tex, y_pos_tex);
 		shader.SetFloat("scale_tex", scale_tex);
 
-		//Update square transforms every frame using glm  
-		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-		trans = glm::rotate(trans, timeValue, glm::vec3(0.0f, 0.0f, 1.0f));
-		trans = glm::scale(trans, glm::vec3(0.75f, 0.75f, 1.0f));
+		//Update model, view, projection matrices
+		model = glm::mat4(1.0f);
+		model = glm::rotate(model, time_value * glm::radians(25.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(1.75f, 1.75f, 1.75f));
 
-		// set uniforms for container 1
-		shader.SetMat4("transform", trans);
+		view = glm::mat4(1.0f);
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+
+		projection = glm::mat4(1.0f);
+		projection = glm::perspective(glm::radians(45.0f), (float)kWidth / (float)kHeight, 0.1f, 100.0f);
+
+		// set uniforms 
+		shader.SetMat4("model", model);
+		shader.SetMat4("view", view); 
+		shader.SetMat4("projection", projection);
 		
 		// set shader program
 		shader.Use();
 
-		// draw call container 1
-		glBindVertexArray(vao); 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-		// set uniforms for container 2
-		trans = glm::mat4(1.0f);
-		trans = glm::translate(trans, glm::vec3(-0.5f, 0.5f, 0.0f));
-		trans = glm::scale(trans, glm::vec3(periodic_cycle, periodic_cycle, 1.0f));
-
-		// set uniforms container 2
-		shader.SetMat4("transform", trans);
-
-		// draw call container 1
-
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		// draw call cube
+		//plane.Draw();
+		cube.Draw();
 
 		// check and call events and swap buffers
 		glfwPollEvents();
 		glfwSwapBuffers(window); 
 	}
-
-	// optional: de-allocate all resources 
-	glDeleteVertexArrays(1, &vao); 
-	glDeleteBuffers(1, &vbo); 
-	glDeleteBuffers(1, &ebo);
 
 	// Terminate window
 	glfwTerminate(); 
