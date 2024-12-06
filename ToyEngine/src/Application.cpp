@@ -14,15 +14,18 @@
 #include "texture_2d.h"
 #include "primatives/cube.h"
 #include "primatives/plane.h"
+#include "delta_time.h"
+#include "cameras/fly_camera.h"
+#include "cameras/orthographic_camera.h"
 
 // Declare functions
-void ProcessInput(GLFWwindow* window);
+void ProcessInput(GLFWwindow* window, float time_step);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLFWwindow* CreateGLFWWindow();
 
-// Declare constants
+// Declare window size constants
 const unsigned int kWidth = 800;
 const unsigned int kHeight = 600;
 
@@ -34,10 +37,16 @@ float y_pos_tex = 0.0;
 float scale_tex = 1.0;
 
 //
-glm::mat4 model = glm::mat4(1.0f); 
-glm::mat4 view = glm::mat4(1.0f); 
-glm::mat4 projection = glm::mat4(1.0f);
+float last_x = (float)kWidth / 2.0f, last_y = (float)kHeight / 2.0f;
+bool first_mouse = true;
 
+ToyEngine::OrthographicCamera camera;
+ToyEngine::DeltaTime& dt = ToyEngine::DeltaTime::getInstance();
+
+// initialize model, view, projection matrices
+glm::mat4 model = glm::mat4(1.0f); 
+
+//
 glm::vec3 cube_positions[] = {
 	glm::vec3(0.0f,  0.0f,  0.0f),
 	glm::vec3(2.0f,  5.0f, -15.0f),
@@ -62,31 +71,6 @@ int main(void) {
 	// create shader program
 	ToyEngine::Shader shader("../assets/shaders/hello_triangle.vs", "../assets/shaders/hello_triangle.fs");
 
-	// create camera 
-	glm::vec3 camera_position = glm::vec3(0.0, 1.0, 3.0);
-	glm::vec3 camera_lookat_target = glm::vec3(0.0, 0.0, 0.0); 
-	glm::vec3 camera_view_direction = glm::normalize(camera_position - camera_lookat_target);
-	glm::vec3 world_up = glm::vec3(0.0, 1.0, 0.0); 
-	glm::vec3 camera_right = glm::normalize(glm::cross(world_up, camera_view_direction));
-	glm::vec3 camera_up = glm::cross(camera_view_direction, camera_right);
-
-	glm::mat4 look_at_rotation = glm::mat4(glm::vec4(camera_right, 0.0),
-		glm::vec4(camera_up, 0.0),
-		glm::vec4(camera_view_direction, 0.0),
-		glm::vec4(0.0, 0.0, 0.0, 1.0));
-	look_at_rotation = glm::transpose(look_at_rotation);
-	glm::mat4 look_at_translation = glm::mat4(glm::vec4(1.0, 0.0, 0.0, 0.0),
-		glm::vec4(0.0, 1.0, 0.0, 0.0),
-		glm::vec4(0.0, 0.0, 1.0, 0.0),
-		glm::vec4((- 1.0f * camera_position), 1.0));
-
-	glm::mat4 look_at = look_at_rotation * look_at_translation;
-
-	const float kRadius = 10.0f;
-	float camera_x, camera_z;
-	glm::mat4 view = glm::lookAt(camera_position, camera_lookat_target, world_up);
-	std::cout << glm::to_string(view) << std::endl;
-
 	// define vertex data  
 	ToyEngine::Plane plane;
 	ToyEngine::Cube cube;
@@ -105,22 +89,23 @@ int main(void) {
 	// Render loop 
 	while (!glfwWindowShouldClose(window))
 	{
-		// input
-		ProcessInput(window);
-
 		// rendering commands 
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// update time delta
+		dt.Step();
+
+		// input
+		ProcessInput(window, dt.delta_time());
 
 		// bind texture on corresponding texture units
 		container_tex.Activate();
 		awesome_face_tex.Activate();
 
 		// update time values
-		float time_value = glfwGetTime();
-		float periodic_cycle = (sin(time_value) / 2.0f) + 0.5f;
-
+		float periodic_cycle = (sin(dt.current_frame_time()) / 2.0f) + 0.5f;
 
 		// set uniforms used in fragment shader
 		shader.SetFloat4("periodic_brightness", periodic_cycle, periodic_cycle, periodic_cycle, 1.0f);
@@ -128,23 +113,14 @@ int main(void) {
 		shader.SetFloat2("pos_tex", x_pos_tex, y_pos_tex);
 		shader.SetFloat("scale_tex", scale_tex);
 
-		//Update view, projection matrices
-		// update camera
-		camera_x = cos(time_value) * kRadius;
-		camera_z = sin(time_value) * kRadius;
-		view = glm::lookAt(glm::vec3(camera_x, 0.0, camera_z), camera_lookat_target, world_up);
+		//Update view, projection matrices (set uniforms) 
+		shader.SetMat4("view", camera.GetViewMatrix()); 
+		shader.SetMat4("projection", camera.GetProjectionMatrix());
 
-		projection = glm::mat4(1.0f);
-		projection = glm::perspective(glm::radians(45.0f), (float)kWidth / (float)kHeight, 0.1f, 100.0f);
-
-		// set uniforms 
-		shader.SetMat4("view", view); 
-		shader.SetMat4("projection", projection);
-
-		// draw call cube
+		// draw call cubes
 		for (int i = 0; i < sizeof(cube_positions) / sizeof(glm::vec3); i++)
 		{
-			// Update model
+			// Update model matrix
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, cube_positions[i]);
 			float angle = 20.0f * i;
@@ -152,7 +128,7 @@ int main(void) {
 			
 			if (i % 3 == 0) 
 			{
-				model = glm::rotate(model, time_value * glm::radians(25.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+				model = glm::rotate(model, dt.current_frame_time() * glm::radians(25.0f), glm::vec3(1.0f, 1.0f, 0.0f));
 			}
 			model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 			
@@ -170,11 +146,42 @@ int main(void) {
 	return 0;
 }
 
-void ProcessInput(GLFWwindow* window)
+void ProcessInput(GLFWwindow* window, float time_step)
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) 
 	{
 		glfwSetWindowShouldClose(window, true); 
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		//std::cout << "Key W Press" << std::endl;
+		camera.ProcessKeyboard(ToyEngine::FORWARD, time_step);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		//std::cout << "Key W Press" << std::endl;
+		camera.ProcessKeyboard(ToyEngine::BACKWARD, time_step);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		//std::cout << "Key A Press" << std::endl;
+		camera.ProcessKeyboard(ToyEngine::LEFT, time_step);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		//std::cout << "Key D Press" << std::endl;
+		camera.ProcessKeyboard(ToyEngine::RIGHT, time_step);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		//std::cout << "Key W Press" << std::endl;
+		camera.ProcessKeyboard(ToyEngine::DOWN, time_step);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		//std::cout << "Key W Press" << std::endl;
+		camera.ProcessKeyboard(ToyEngine::UP, time_step);
 	}
 }
 
@@ -199,26 +206,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		}
 	}
 
-	if (key == GLFW_KEY_W && action == GLFW_PRESS)
-	{
-		std::cout << "Key W Press" << std::endl;
-		y_pos_tex += 0.1;
-	}
-	if (key == GLFW_KEY_S && action == GLFW_PRESS)
-	{
-		std::cout << "Key W Press" << std::endl;
-		y_pos_tex -= 0.1;
-	}
-	if (key == GLFW_KEY_A && action == GLFW_PRESS)
-	{
-		std::cout << "Key A Press" << std::endl;
-		x_pos_tex -= 0.1;
-	}
-	if (key == GLFW_KEY_D && action == GLFW_PRESS)
-	{
-		std::cout << "Key D Press" << std::endl;
-		x_pos_tex += 0.1;
-	}
 	if (key == GLFW_KEY_LEFT_BRACKET && action == GLFW_PRESS)
 	{
 		std::cout << "Key Left Bracket Press" << std::endl;
@@ -236,7 +223,25 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) 
 {
-	//std::cout << "xpos: " << xpos << "\typos: " << ypos << std::endl;
+	if (first_mouse) // initially set to true
+	{
+		last_x = xpos;
+		last_y = ypos;
+		first_mouse = false;
+	}
+
+	float x_offset = xpos - last_x; 
+	float y_offset = ypos - last_y;
+
+	last_x = xpos; 
+	last_y = ypos;
+
+	camera.ProcessMouseMovement(x_offset, y_offset);
+}
+
+void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
+{
+	camera.ProcessMouseScroll((float)y_offset);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -270,6 +275,9 @@ GLFWwindow* CreateGLFWWindow()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 	// set call-back function for window resize
 	glfwSetKeyCallback(window, key_callback);							// set call-back function key input
 	glfwSetCursorPosCallback(window, cursor_position_callback);			// set call-back function cursor pos input
+	glfwSetScrollCallback(window, scroll_callback);
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);		// capture mouse cursor
 
 	// Initialize GLAD
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
