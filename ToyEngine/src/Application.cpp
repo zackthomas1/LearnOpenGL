@@ -40,7 +40,7 @@ float scale_tex = 1.0;
 float last_x = (float)kWidth / 2.0f, last_y = (float)kHeight / 2.0f;
 bool first_mouse = true;
 
-ToyEngine::OrthographicCamera camera;
+ToyEngine::FlyCamera camera;
 ToyEngine::DeltaTime& dt = ToyEngine::DeltaTime::getInstance();
 
 // initialize model, view, projection matrices

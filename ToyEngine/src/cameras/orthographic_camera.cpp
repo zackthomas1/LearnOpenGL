@@ -26,10 +26,4 @@ namespace ToyEngine
 	{
 		return glm::ortho(left_, right_, bottom_, top_, znear_, zfar_);
 	}
-
-	// call-back
-	void OrthographicCamera::ProcessMouseScroll(float y_offset)
-	{
-
-	}
 }

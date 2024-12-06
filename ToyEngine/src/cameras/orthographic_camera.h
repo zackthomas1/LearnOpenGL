@@ -22,9 +22,6 @@ namespace ToyEngine
 		// getter/setters
 		glm::mat4 GetProjectionMatrix() const;
 
-		// call-back
-		virtual void ProcessMouseScroll(float y_offset);
-
 	private:
 		// camera attributes
 		float left_, right_, bottom_, top_;
