@@ -24,7 +24,7 @@ namespace ToyEngine
 	// getters/setters
 	glm::mat4 OrthographicCamera::GetProjectionMatrix() const
 	{
-		return glm::ortho(0.0f, 8.0f, 0.0f, 6.0f, znear_, zfar_);
+		return glm::ortho(left_, right_, bottom_, top_, znear_, zfar_);
 	}
 
 	// call-back

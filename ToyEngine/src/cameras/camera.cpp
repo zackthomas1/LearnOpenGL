@@ -65,23 +65,6 @@ namespace ToyEngine
 
 		UpdateCameraVectors();
 	}
-	void Camera::ProcessMouseMovement(float x_offset, float y_offset, GLboolean constrainPitch)
-	{
-		std::cout << "x_offset: " << x_offset << "\ty_offset: " << x_offset << std::endl;
-		
-		x_offset *= mouse_sensitivity_;
-		y_offset *= mouse_sensitivity_;
-
-		yaw_ += x_offset;
-		pitch_ -= y_offset;
-
-		if (pitch_ > 89.0f)
-			pitch_ = 89.0f;
-		else if (pitch_ < -89.0f)
-			pitch_ = -89.0f;
-
-		UpdateCameraVectors();
-	}
 
 	// protected functions
 	void Camera::UpdateCameraVectors()

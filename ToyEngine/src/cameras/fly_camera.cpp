@@ -27,6 +27,24 @@ namespace ToyEngine{
 		return glm::perspective(glm::radians(fov_), aspect_, znear_, zfar_);
 	}
 
+	// call-back
+	void FlyCamera::ProcessMouseMovement(float x_offset, float y_offset, GLboolean constrainPitch)
+	{
+		//std::cout << "x_offset: " << x_offset << "\ty_offset: " << x_offset << std::endl;
+
+		x_offset *= mouse_sensitivity_;
+		y_offset *= mouse_sensitivity_;
+
+		yaw_ += x_offset;
+		pitch_ -= y_offset;
+
+		if (pitch_ > 89.0f)
+			pitch_ = 89.0f;
+		else if (pitch_ < -89.0f)
+			pitch_ = -89.0f;
+
+		UpdateCameraVectors();
+	}
 	void FlyCamera::ProcessMouseScroll(float y_offset)
 	{
 		fov_ -= y_offset;

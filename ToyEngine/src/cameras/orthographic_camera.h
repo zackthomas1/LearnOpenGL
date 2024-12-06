@@ -4,8 +4,8 @@
 namespace ToyEngine
 {
 	// default camera values
-	const float kLeft = -800.0f, kRight = 0.0f,
-		kBottom = 600.0f, kTop = 0.0;
+	const float kLeft = -4.0f, kRight = 4.0f,
+		kBottom = -3.0f, kTop = 3.0;
 
 	class OrthographicCamera : public Camera {
 		

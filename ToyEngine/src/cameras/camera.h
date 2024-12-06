@@ -47,7 +47,7 @@ namespace ToyEngine
 
 		// call-back
 		virtual void ProcessKeyboard(Camera_Movement direction, float time_step);
-		virtual void ProcessMouseMovement(float x_offset, float y_offset, GLboolean constrainPitch = TRUE);
+		virtual void ProcessMouseMovement(float x_offset, float y_offset, GLboolean constrainPitch = TRUE) {}
 		virtual void ProcessMouseScroll(float y_offset) {}
 	protected: 
 		// camera attributes
