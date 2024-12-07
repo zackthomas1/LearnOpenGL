@@ -9,7 +9,7 @@ namespace ToyEngine
 
 		void Bind() const;
 		void Activate() const;
-		void SetParameters(unsigned int wrap_s, unsigned int wrap_t, unsigned int min_filter, unsigned int mag_filter);
+		void SetParameters(uint32_t wrap_s, uint32_t wrap_t, uint32_t min_filter, uint32_t mag_filter);
 
 		unsigned int id() const { return id_; };
 		unsigned int width() const { return width_; };

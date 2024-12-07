@@ -61,7 +61,8 @@ glm::vec3 cube_positions[] = {
 };
 
 int main(void) {
-	std::cout << "Hello OpenGL" << std::endl;
+	ToyEngine::Log::Init(); 
+	TY_CORE_INFO("Initialize Logging");
 
 	// Create window
 	GLFWwindow* window = CreateGLFWWindow();

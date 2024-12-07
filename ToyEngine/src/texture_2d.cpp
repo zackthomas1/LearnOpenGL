@@ -42,7 +42,7 @@ namespace ToyEngine
 		}
 		else
 		{
-			std::cout << "Failed to load texture" << std::endl;
+			TY_CORE_ERROR("Failed to load texture");
 		}
 		stbi_image_free(data);
 	}

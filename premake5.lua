@@ -18,6 +18,7 @@ IncludeDir["GLFW"] = "ToyEngine/vendor/GLFW/include"
 IncludeDir["glad"] = "ToyEngine/vendor/glad/include"
 IncludeDir["stb"] = "ToyEngine/vendor/stb"
 IncludeDir["glm"] = "ToyEngine/vendor/glm"
+IncludeDir["spdlog"] = "ToyEngine/vendor/spdlog/include"
 
 group "Dependencies"
     include "ToyEngine/vendor/GLFW"
@@ -54,7 +55,8 @@ includedirs
     "%{IncludeDir.GLFW}",
     "%{IncludeDir.glad}",
     "%{IncludeDir.stb}",
-    "%{IncludeDir.glm}"
+    "%{IncludeDir.glm}",
+    "%{IncludeDir.spdlog}",
 }
 
 links
@@ -66,6 +68,7 @@ links
 
 filter "system:windows"
     systemversion "latest"
+    buildoptions { "/utf-8" }
 
     defines
     {
@@ -74,11 +77,16 @@ filter "system:windows"
     }
 
     filter "configurations:Debug"
-        defines {"DEBUG"}
+        defines {"TY_DEBUG", "TY_ENABLE_ASSERTS"}
         runtime "Debug"
         symbols "On"
 
     filter "configurations:Release"
-        defines {"NDEBUG"}
+        defines {"TY_RELEASE"}
+        runtime "Release"
+        optimize "On"
+
+    filter "configurations:Dist"
+        defines {"TY_DIST"}
         runtime "Release"
         optimize "On"

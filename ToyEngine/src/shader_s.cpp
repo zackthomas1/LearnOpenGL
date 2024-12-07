@@ -75,7 +75,7 @@ namespace ToyEngine
 		}
 		catch (std::ifstream::failure e)
 		{
-			std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+			TY_CORE_ERROR("ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ");
 		}
 		return source_code;
 	}
@@ -96,7 +96,7 @@ namespace ToyEngine
 		if (!success)
 		{
 			glGetShaderInfoLog(vertex_shader, 512, NULL, info_log);
-			std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\N" << info_log << std::endl;
+			TY_CORE_ERROR("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n{}", info_log);
 		}
 
 		// compile fragment shader
@@ -109,7 +109,7 @@ namespace ToyEngine
 		if (!success)
 		{
 			glGetShaderInfoLog(fragment_shader, 512, NULL, info_log);
-			std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << info_log << std::endl;
+			TY_CORE_ERROR("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n{}", info_log);
 		}
 
 		// Create shader program
@@ -122,7 +122,7 @@ namespace ToyEngine
 		glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
 		if (!success) {
 			glGetProgramInfoLog(shader_program, 512, NULL, info_log);
-			std::cout << "ERROR::SHADERPROGRAM::COMPILIATION_FAILED\n" << info_log << std::endl;
+			TY_CORE_ERROR("ERROR::SHADERPROGRAM::COMPILIATION_FAILED\n{}", info_log);
 		}
 
 		// Clean-up. Delete shaders. 
