@@ -156,32 +156,32 @@ void ProcessInput(GLFWwindow* window, float time_step)
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		//std::cout << "Key W Press" << std::endl;
+		TY_CORE_TRACE("Key W Press");
 		camera.ProcessKeyboard(ToyEngine::FORWARD, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 	{
-		//std::cout << "Key W Press" << std::endl;
+		TY_CORE_TRACE("Key S Press");
 		camera.ProcessKeyboard(ToyEngine::BACKWARD, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 	{
-		//std::cout << "Key A Press" << std::endl;
+		TY_CORE_TRACE("Key A Press");
 		camera.ProcessKeyboard(ToyEngine::LEFT, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
-		//std::cout << "Key D Press" << std::endl;
+		TY_CORE_TRACE("Key D Press");
 		camera.ProcessKeyboard(ToyEngine::RIGHT, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
-		//std::cout << "Key W Press" << std::endl;
+		TY_CORE_TRACE("Key Q Press");
 		camera.ProcessKeyboard(ToyEngine::DOWN, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 	{
-		//std::cout << "Key W Press" << std::endl;
+		TY_CORE_TRACE("Key E Press");
 		camera.ProcessKeyboard(ToyEngine::UP, time_step);
 	}
 }
