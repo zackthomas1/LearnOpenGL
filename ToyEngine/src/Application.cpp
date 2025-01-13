@@ -70,11 +70,73 @@ int main(void) {
 		return -1;
 
 	// create shader program
-	ToyEngine::Shader shader("../assets/shaders/hello_triangle.vs", "../assets/shaders/hello_triangle.fs");
+	ToyEngine::Shader shader("../assets/shaders/2_lighting_object.vs", "../assets/shaders/2_lighting_object.fs");
+	ToyEngine::Shader lightCubeShader("../assets/shaders/2_lighting_lightcube.vs", "../assets/shaders/2_lighting_lightcube.fs");
 
 	// define vertex data  
 	ToyEngine::Plane plane;
 	ToyEngine::Cube cube;
+
+	// light vertex data
+	float light_vertex_data[180] = {
+		// position			  // uv
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	};
+	unsigned int VBO, lightCubeVAO;
+	glGenVertexArrays(1, &lightCubeVAO);
+	glGenBuffers(1, &VBO); 
+
+	glBindVertexArray(lightCubeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertex_data), light_vertex_data, GL_STATIC_DRAW);
+	
+	// aPos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); 
+	glEnableVertexAttribArray(0); 
+
+	// aTexCoord
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	// generate textures
 	// ---------
@@ -92,7 +154,7 @@ int main(void) {
 	{
 		// rendering commands 
 		glEnable(GL_DEPTH_TEST);
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// update time delta
@@ -101,18 +163,41 @@ int main(void) {
 		// input
 		ProcessInput(window, dt.delta_time());
 
+		// Light Cube 
+		// ----------------------------------------
+		// activate shader for light objects
+		lightCubeShader.Use();
+
+		// represents light source location in world-space coordinates
+		glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+		glm::mat4 light_model = glm::mat4(1.0f); 
+		light_model = glm::translate(light_model, lightPos); 
+		light_model = glm::scale(light_model, glm::vec3(0.75f));
+
+		//Update view, projection matrices (set uniforms) 
+		lightCubeShader.SetMat4("view", camera.GetViewMatrix());
+		lightCubeShader.SetMat4("projection", camera.GetProjectionMatrix());
+
+		lightCubeShader.SetMat4("model", light_model);
+
+		// draw light cube
+		glBindVertexArray(lightCubeVAO); 
+		glDrawArrays(GL_TRIANGLES, 0, 36); 
+		// ----------------------------------------
+
+		// Scene Cubes
+		// ----------------------------------------
+		// activate shader for non-light objects
+		shader.Use();
+
 		// bind texture on corresponding texture units
 		container_tex.Activate();
 		awesome_face_tex.Activate();
 
-		// update time values
-		float periodic_cycle = (sin(dt.current_frame_time()) / 2.0f) + 0.5f;
-
-		// set uniforms used in fragment shader
-		shader.SetFloat4("periodic_brightness", periodic_cycle, periodic_cycle, periodic_cycle, 1.0f);
-		shader.SetFloat("alpha_tex", alpha_tex);
-		shader.SetFloat2("pos_tex", x_pos_tex, y_pos_tex);
-		shader.SetFloat("scale_tex", scale_tex);
+		// fragment shader uniforms
+		shader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		shader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
 
 		//Update view, projection matrices (set uniforms) 
 		shader.SetMat4("view", camera.GetViewMatrix()); 
@@ -136,6 +221,7 @@ int main(void) {
 			shader.SetMat4("model", model);
 			cube.Draw();
 		}
+		// ----------------------------------------
 
 		// check and call events and swap buffers
 		glfwPollEvents();
