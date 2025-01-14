@@ -11,7 +11,16 @@ namespace ToyEngine {
 
 		void Step();
 
+		/// <summary>
+		/// Returns the difference between the current frame time and the previous time.
+		/// </summary>
+		/// <returns></returns>
 		float delta_time() const { return delta_time_; }
+
+		/// <summary>
+		/// Returns the glfw time in seconds, which is the time since the beginning of the application.
+		/// </summary>
+		/// <returns></returns>
 		float current_frame_time() const{ return current_frame_time_; }
 
 	private:

@@ -152,21 +152,31 @@ int main(void) {
 		// input
 		ProcessInput(window, dt.delta_time());
 
+		// Light properties
+		glm::vec3 lightColor;
+		lightColor.x = sin(dt.current_frame_time() * 2.0f);
+		lightColor.y = sin(dt.current_frame_time() * 0.7f);
+		lightColor.z = sin(dt.current_frame_time() * 1.3f);
+
+		// represents light source location in world-space coordinates
+		glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
 		// Light Cube 
 		// ----------------------------------------
 		// activate shader for light objects
 		lightCubeShader.Use();
 
-		// represents light source location in world-space coordinates
-		glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-
-		glm::mat4 light_model = glm::mat4(1.0f); 
-		light_model = glm::translate(light_model, lightPos); 
-		light_model = glm::scale(light_model, glm::vec3(0.75f));
+		// fragment shader uniforms
+		lightCubeShader.SetVec3("light.diffuse", lightColor * glm::vec3(2.0f));
 
 		//Update view, projection matrices (set uniforms) 
 		lightCubeShader.SetMat4("view", camera.GetViewMatrix());
 		lightCubeShader.SetMat4("projection", camera.GetProjectionMatrix());
+
+		// Update model matrix 
+		glm::mat4 light_model = glm::mat4(1.0f);
+		light_model = glm::translate(light_model, lightPos);
+		light_model = glm::scale(light_model, glm::vec3(0.75f));
 
 		lightCubeShader.SetMat4("model", light_model);
 
@@ -181,9 +191,16 @@ int main(void) {
 		shader.Use();
 
 		// fragment shader uniforms
-		shader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
-		shader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
-		shader.SetVec3("lightPos", lightPos);
+		shader.SetVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+		shader.SetVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		shader.SetVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		shader.SetFloat("material.shininess", 32.0f);
+
+		shader.SetVec3("light.position",	lightPos);
+		shader.SetVec3("light.ambient",		lightColor * glm::vec3(0.1f)); 
+		shader.SetVec3("light.diffuse",		lightColor * glm::vec3(0.5f));
+		shader.SetVec3("light.specular",	lightColor * glm::vec3(1.0f));
+
 		shader.SetVec3("viewPos", camera.GetPosition());
 
 		//Update view, projection matrices (set uniforms) 
