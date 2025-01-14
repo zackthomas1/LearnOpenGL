@@ -43,6 +43,11 @@ namespace ToyEngine
 		glUniform3f(glGetUniformLocation(id_, name.c_str()), v1, v2, v3);
 	}
 
+	void Shader::SetVec3(const std::string& name, glm::vec3 v1) const
+	{
+		glUniform3f(glGetUniformLocation(id_, name.c_str()), v1.x, v1.y, v1.z);
+	}
+
 	void Shader::SetVec4(const std::string& name, float v1, float v2, float v3, float v4) const
 	{
 		glUniform4f(glGetUniformLocation(id_, name.c_str()), v1, v2, v3, v4);

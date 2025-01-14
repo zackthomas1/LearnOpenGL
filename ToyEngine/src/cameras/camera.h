@@ -37,6 +37,7 @@ namespace ToyEngine
 		virtual ~Camera() {}
 
 		// getter/setters
+		glm::vec3 GetPosition() const { return camera_position_; }
 		virtual glm::mat4 GetViewMatrix() const;
 		virtual glm::mat4 GetProjectionMatrix() const = 0;
 

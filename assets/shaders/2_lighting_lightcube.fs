@@ -1,5 +1,6 @@
 #version 330 core 
 
+in vec3 normal;
 in vec4 lightColor;
 
 out vec4 FragColor;
