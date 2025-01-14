@@ -1,12 +1,17 @@
 #version 330 core
 struct Material{
-    vec3 ambient; 
-    vec3 diffuse; 
-    vec3 specular; 
+
+    // Note: sampler2D is a so called opaque type which means 
+    // it be can't instantiated, but only defined as uniforms. 
+    // If the struct would be instantiated other than as a uniform 
+    // (like a function parameter) GLSL could throw strange errors; 
+    // the same thus applies to any struct holding such opaque types.
+    sampler2D diffuse;
+    sampler2D specular;
 
     // Note: The higher the shininess value of an object, the more it properly reflects the light 
     // instead of scattering it all around and thus the smaller the highlight becomes.
-    float shininess; 
+    float shininess;
 };
 
 struct Light{
@@ -19,8 +24,9 @@ struct Light{
     vec3 specular;  // Usally kept at vec3(1.0) 
 };
 
-in vec3 normal;
 in vec3 fragPos;
+in vec3 normal;
+in vec2 texCoords;
 
 uniform Material material;
 uniform Light light;
@@ -32,7 +38,7 @@ void main()
 {
     // ambient color
     // ------------------
-    vec3 ambientColor = material.ambient * light.ambient;
+    vec3 ambientColor = vec3(texture(material.diffuse, texCoords)) * light.ambient;
 
     // diffuse color
     // -----------------
@@ -42,11 +48,10 @@ void main()
     // Note: The cosine term is the factor that describes how much light interacts with surface. 
     // A fragments brightness increases the closer it aligns with the incoming light rays from the source.
     float cosineTerm = max(dot(norm, lightDir), 0.0);
-    vec3 diffuseColor = (material.diffuse * cosineTerm) * light.diffuse;
+    vec3 diffuseColor = (vec3(texture(material.diffuse, texCoords)) * cosineTerm) * light.diffuse;
 
     // specular color
     // -------------------
-
     // Note: To get the view direction calculate the difference between the view (camera) position
     // and the fragment position. Make sure that both are in world space coordinates.
     // It is maybe preferrable to perform this calculation in view-space.
@@ -61,7 +66,7 @@ void main()
     // Note: Calculate the angular distance between this reflection vector and the view direction.
     // The closer the angle between them, the greater the impact of the specular light.
     float specularIntensity = pow(max(dot(reflectDir, viewDir), 0.0),material.shininess);
-    vec3 specularColor = (material.specular * specularIntensity) * light.specular;
+    vec3 specularColor = (vec3(texture(material.specular, texCoords)) * specularIntensity) * light.specular;
 
     // output
     // ----------

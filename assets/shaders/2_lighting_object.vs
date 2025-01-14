@@ -1,16 +1,21 @@
 #version 330 core 
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoords;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec3 normal;
 out vec3 fragPos;
+out vec3 normal;
+out vec2 texCoords; 
 
 void main()
 {
+    // fragment position
+    fragPos = (model * vec4(aPos, 1.0)).xyz;
+
     // normal direction
     // Note: Whenever an non-uniform scale is applied to a normal vector the resulting vector is 
     // no longer perpendicular to the corresponding surface. This distorts the lighting.
@@ -21,9 +26,9 @@ void main()
     // The resulting mat3 can be multiplied with a vec3 normal vector.
     mat3 normalMat = mat3(transpose(inverse(model)));
     normal = normalMat * aNormal;
-    
-    // fragment position
-    fragPos = (model * vec4(aPos, 1.0)).xyz;
 
+    // texture coordinates
+    texCoords = aTexCoords;
+    
     gl_Position = projection * view * model * vec4(aPos, 1.0);
 }
