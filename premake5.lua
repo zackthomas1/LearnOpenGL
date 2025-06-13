@@ -1,7 +1,7 @@
 --premake5.lua 
-workspace "ToyEngine" 
+workspace "LearnOpenGL" 
     architecture "x64"
-    startproject "ToyEngine"
+    startproject "LearnOpenGL"
 
     configurations 
     { 
@@ -14,19 +14,19 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Include directories relative to root folder (solution directory)
 IncludeDir = {}
-IncludeDir["GLFW"] = "ToyEngine/vendor/GLFW/include"
-IncludeDir["glad"] = "ToyEngine/vendor/glad/include"
-IncludeDir["stb"] = "ToyEngine/vendor/stb"
-IncludeDir["glm"] = "ToyEngine/vendor/glm"
-IncludeDir["spdlog"] = "ToyEngine/vendor/spdlog/include"
+IncludeDir["GLFW"]      = "LearnOpenGL/vendor/GLFW/include"
+IncludeDir["glad"]      = "LearnOpenGL/vendor/glad/include"
+IncludeDir["stb"]       = "LearnOpenGL/vendor/stb"
+IncludeDir["glm"]       = "LearnOpenGL/vendor/glm"
+IncludeDir["spdlog"]    = "LearnOpenGL/vendor/spdlog/include"
 
 group "Dependencies"
-    include "ToyEngine/vendor/GLFW"
-    include "ToyEngine/vendor/glad"
+    include "LearnOpenGL/vendor/GLFW"
+    include "LearnOpenGL/vendor/glad"
 group ""
 
-project "ToyEngine"
-    location "ToyEngine"
+project "LearnOpenGL"
+    location "LearnOpenGL"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
@@ -35,7 +35,7 @@ project "ToyEngine"
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
 	pchheader "pch.h"
-	pchsource "ToyEngine/src/pch.cpp"
+	pchsource "LearnOpenGL/src/pch.cpp"
 
 files
 {
