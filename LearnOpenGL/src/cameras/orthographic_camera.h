@@ -1,7 +1,7 @@
 #pragma once
 #include "camera.h"
 
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	// default camera values
 	const float kLeft = -4.0f, kRight = 4.0f,

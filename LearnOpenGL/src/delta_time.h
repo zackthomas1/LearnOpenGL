@@ -1,5 +1,5 @@
 #pragma once
-namespace ToyEngine {
+namespace LearnOpenGL {
 	class DeltaTime
 	{
 	public:

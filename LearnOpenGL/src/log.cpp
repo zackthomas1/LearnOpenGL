@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "log.h"
 
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	std::shared_ptr<spdlog::logger> Log::s_CoreLogger;
 	std::shared_ptr<spdlog::logger> Log::s_ClientLogger;

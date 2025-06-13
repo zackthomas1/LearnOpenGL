@@ -1,6 +1,6 @@
 #pragma once
 #include "primative.h"
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	class Cube : public Primative
 	{

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "orthographic_camera.h"
 
-namespace ToyEngine 
+namespace LearnOpenGL 
 {
 	OrthographicCamera::OrthographicCamera(glm::vec3 position, glm::vec3 up,
 		float pitch, float yaw, float znear, float zfar,

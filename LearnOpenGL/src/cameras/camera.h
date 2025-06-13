@@ -5,7 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	// defines serveral possible options for camera movement.
 	// Use as an abstraction to stay away from window_system specific input methods

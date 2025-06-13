@@ -2,7 +2,7 @@
 #include "plane.h"
 #include <glad/glad.h>
 
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	Plane::Plane()
 	{

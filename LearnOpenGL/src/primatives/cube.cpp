@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "cube.h"
 #include <glad/glad.h>
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	Cube::Cube() {
 		// define cube vertex data  

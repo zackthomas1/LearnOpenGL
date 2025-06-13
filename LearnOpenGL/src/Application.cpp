@@ -40,8 +40,8 @@ float scale_tex = 1.0;
 float last_x = (float)kWidth / 2.0f, last_y = (float)kHeight / 2.0f;
 bool first_mouse = true;
 
-ToyEngine::FlyCamera camera;
-ToyEngine::DeltaTime& dt = ToyEngine::DeltaTime::getInstance();
+LearnOpenGL::FlyCamera camera;
+LearnOpenGL::DeltaTime& dt = LearnOpenGL::DeltaTime::getInstance();
 
 // initialize model, view, projection matrices
 glm::mat4 model = glm::mat4(1.0f); 
@@ -61,7 +61,7 @@ glm::vec3 cube_positions[] = {
 };
 
 int main(void) {
-	ToyEngine::Log::Init(); 
+	LearnOpenGL::Log::Init(); 
 	TY_CORE_INFO("Initialize Logging");
 
 	// Create window
@@ -70,12 +70,12 @@ int main(void) {
 		return -1;
 
 	// create shader program
-	ToyEngine::Shader shader("../assets/shaders/2_lighting_object.vs", "../assets/shaders/2_lighting_object.fs");
-	ToyEngine::Shader lightCubeShader("../assets/shaders/2_lighting_lightcube.vs", "../assets/shaders/2_lighting_lightcube.fs");
+	LearnOpenGL::Shader shader("../assets/shaders/2_lighting_object.vs", "../assets/shaders/2_lighting_object.fs");
+	LearnOpenGL::Shader lightCubeShader("../assets/shaders/2_lighting_lightcube.vs", "../assets/shaders/2_lighting_lightcube.fs");
 
 	// define vertex data  
-	ToyEngine::Plane plane;
-	ToyEngine::Cube cube;
+	LearnOpenGL::Plane plane;
+	LearnOpenGL::Cube cube;
 
 	// light vertex data
 	float light_vertex_data[288] = {
@@ -143,8 +143,8 @@ int main(void) {
 	glEnableVertexAttribArray(2);
 
 	// load container texture
-	ToyEngine::Texture2D diffuse_map("../assets/textures/container2.png", false);
-	ToyEngine::Texture2D specular_map("../assets/textures/container2_specular.png", false);
+	LearnOpenGL::Texture2D diffuse_map("../assets/textures/container2.png", false);
+	LearnOpenGL::Texture2D specular_map("../assets/textures/container2_specular.png", false);
 	
 	// shader configuration
 	shader.Use(); 
@@ -265,32 +265,32 @@ void ProcessInput(GLFWwindow* window, float time_step)
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		TY_CORE_TRACE("Key W Press");
-		camera.ProcessKeyboard(ToyEngine::FORWARD, time_step);
+		camera.ProcessKeyboard(LearnOpenGL::FORWARD, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 	{
 		TY_CORE_TRACE("Key S Press");
-		camera.ProcessKeyboard(ToyEngine::BACKWARD, time_step);
+		camera.ProcessKeyboard(LearnOpenGL::BACKWARD, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 	{
 		TY_CORE_TRACE("Key A Press");
-		camera.ProcessKeyboard(ToyEngine::LEFT, time_step);
+		camera.ProcessKeyboard(LearnOpenGL::LEFT, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
 		TY_CORE_TRACE("Key D Press");
-		camera.ProcessKeyboard(ToyEngine::RIGHT, time_step);
+		camera.ProcessKeyboard(LearnOpenGL::RIGHT, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
 		TY_CORE_TRACE("Key Q Press");
-		camera.ProcessKeyboard(ToyEngine::DOWN, time_step);
+		camera.ProcessKeyboard(LearnOpenGL::DOWN, time_step);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 	{
 		TY_CORE_TRACE("Key E Press");
-		camera.ProcessKeyboard(ToyEngine::UP, time_step);
+		camera.ProcessKeyboard(LearnOpenGL::UP, time_step);
 	}
 }
 

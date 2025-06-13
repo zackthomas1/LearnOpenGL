@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include "stb_image.h"
 
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	Texture2D::Texture2D(const char* path, bool flip_vertically)
 	{

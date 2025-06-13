@@ -1,7 +1,7 @@
 #pragma once
 #include "camera.h"
 
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	// default camera values
 	const float kFov = 45.0f, kAspect = 800.0f/600.0f;

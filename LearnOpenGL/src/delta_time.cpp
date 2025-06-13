@@ -2,7 +2,7 @@
 #include "delta_time.h"
 #include <GLFW/glfw3.h>
 
-namespace ToyEngine {
+namespace LearnOpenGL {
 	DeltaTime::DeltaTime()
 	{
 		current_frame_time_ = glfwGetTime();

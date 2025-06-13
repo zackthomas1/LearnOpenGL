@@ -3,7 +3,7 @@
 
 #include <glad/glad.h>
 
-namespace ToyEngine
+namespace LearnOpenGL
 {
 	Shader::Shader(const char* vertex_path, const char* fragment_path)
 	{
