@@ -24,10 +24,3 @@ namespace LearnOpenGL
 #define TY_CORE_WARN(...)	:: LearnOpenGL::Log::GetCoreLogger()->warn(__VA_ARGS__)
 #define TY_CORE_ERROR(...)	:: LearnOpenGL::Log::GetCoreLogger()->error(__VA_ARGS__)
 #define TY_CORE_FATAL(...)	:: LearnOpenGL::Log::GetCoreLogger()->fatal(__VA_ARGS__)
-
-// client log macros
-#define TY_TRACE(...)		:: LearnOpenGL::Log::GetlientLLogger()->trace(__VA_ARGS__)
-#define TY_INFO(...)		:: LearnOpenGL::Log::GetClientLogger()->info(__VA_ARGS__)
-#define TY_WARN(...)		:: LearnOpenGL::Log::GetClientLogger()->warn(__VA_ARGS__)
-#define TY_ERROR(...)		:: LearnOpenGL::Log::GetlientLLogger()->error(__VA_ARGS__)
-#define TY_CORE_FATAL(...)	:: LearnOpenGL::Log::GetlientLLogger()->fatal(__VA_ARGS__)
