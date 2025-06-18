@@ -2,7 +2,6 @@
 .vs/
 bin/
 bin-int/
-ToyEngine/vendor
 
 #Files 
 *.user
