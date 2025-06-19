@@ -15,7 +15,7 @@ struct Material{
     float shininess;
 };
 
-struct Light{
+struct PointLight{
     vec3 position;
 
     // Note: a light source has a different intensity for 
@@ -29,6 +29,9 @@ struct Light{
     float linear;
     float quadratic;
 };
+#define NR_POINTS_LIGHTS 4
+// glsl uniform array can not be dynamically allocated 
+uniform PointLight pointLights[NR_POINTS_LIGHTS];
 
 struct SpotLight{
     vec3 position;
@@ -48,6 +51,7 @@ struct SpotLight{
     float innerAngle;  // cutoff cos(angle(radians)) specifying the spot light radius
     float outerAngle; 
 };
+uniform SpotLight spotLight;
 
 struct DirectionalLight{ 
     vec3 direction; // directional vector replaces position vector
@@ -57,28 +61,94 @@ struct DirectionalLight{
     vec3 specular; 
 
 };
+uniform DirectionalLight dirLight;
+
+// Light calculation function prototypes
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, vec3 fragPos);
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, vec3 fragPos);
+vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir);
 
 in vec3 fragPos;
 in vec3 normal;
 in vec2 texCoords;
 
 uniform Material material;
-uniform SpotLight light;
-uniform DirectionalLight dirLight;
 uniform vec3 viewPos;
 
 out vec4 FragColor;
 
 void main()
 {
+    vec3 norm = normalize(normal);
+    vec3 viewDir = normalize(fragPos - viewPos);
 
+    
+    // lighting calculations
+    vec3 totalLight = CalcDirLight(dirLight, norm, viewDir);
+    for (int i = 0; i < NR_POINTS_LIGHTS; i++){ 
+        totalLight += CalcPointLight(pointLights[i], norm, viewDir, fragPos);
+    }
+    totalLight += CalcSpotLight(spotLight, norm, viewDir, fragPos);
+
+    // emission color
+    // -----------------
+    vec3 emissionColor = texture(material.emission, texCoords).rgb;
+
+    // output
+    // ----------
+    vec3 rgbColor = totalLight;
+
+    FragColor = vec4(rgbColor, 1.0);
+}
+
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, vec3 fragPos)
+{
+    // light caster
+    // ------------------
+    vec3 lightDir = normalize(light.position - fragPos);    // positional light caster
+
+    float distance = distance(light.position, fragPos);
+    float attenuation = 1.0 / (light.constant + (light.linear * distance) + (light.quadratic * pow(distance, 2)));
+
+    // ambient color
+    // ------------------
+    vec3 ambientColor = texture(material.diffuse, texCoords).rgb * light.ambient;
+
+    // diffuse color
+    // -----------------
+    // Note: The cosine term is the factor that describes how much light interacts with surface. 
+    // A fragments brightness increases the closer it aligns with the incoming light rays from the source.
+    float cosineTerm = max(dot(normal, lightDir), 0.0);
+    vec3 diffuseColor = texture(material.diffuse, texCoords).rgb * cosineTerm * light.diffuse;
+
+    // specular color
+    // -------------------
+
+    // Note: The lightDir vector is negated. The reflect function expects the first vector 
+    // to point from the light source towards the fragment's position. The lightDir vector 
+    // currently points the other way around. To make sure we get the correct reflect vector
+    // we reverse the lightDir vector. 
+    vec3 reflectDir = reflect(-lightDir, normal); 
+
+    // Note: Calculate the angular distance between this reflection vector and the view direction.
+    // The closer the angle between them, the greater the impact of the specular light.
+    float specularIntensity = pow(max(dot(reflectDir, viewDir), 0.0),material.shininess);
+    vec3 specularColor = (texture(material.specular, texCoords).rgb * specularIntensity) * light.specular;
+
+    ambientColor    *= attenuation;
+    diffuseColor    *= attenuation;
+    specularColor   *= attenuation;
+
+    return ambientColor + diffuseColor + specularColor;
+}
+
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, vec3 fragPos){
     // light caster
     // ------------------
     float distance = distance(light.position, fragPos);
     float attenuation = 1.0 / (light.constant + (light.linear * distance) + (light.quadratic * pow(distance, 2)));
     
     vec3 lightDir = normalize(light.position - fragPos);    // positional light caster
-    // vec3 lightDir = normalize(-dirLight.direction);  // directional light caster
 
     // calculate spot light terms
     float theta = dot(lightDir, normalize(-light.spotDir)); // the angle between the light direction and spot direction in radians
@@ -87,36 +157,19 @@ void main()
 
     // ambient color
     // ------------------
-    vec3 ambientColor = vec3(texture(material.diffuse, texCoords)) * light.ambient;
+    vec3 ambientColor = texture(material.diffuse, texCoords).rgb * light.ambient;
 
     // diffuse color
-    // -----------------
-    vec3 norm = normalize(normal); 
-    
-    // Note: The cosine term is the factor that describes how much light interacts with surface. 
-    // A fragments brightness increases the closer it aligns with the incoming light rays from the source.
-    float cosineTerm = max(dot(norm, lightDir), 0.0);
+    // -----------------   
+    float cosineTerm = max(dot(normal, lightDir), 0.0);
     vec3 diffuseColor = texture(material.diffuse, texCoords).rgb * cosineTerm * light.diffuse;
 
     // specular color
     // -------------------
-    // Note: To get the view direction calculate the difference between the view (camera) position
-    // and the fragment position. Make sure that both are in world space coordinates.
-    // It is maybe preferrable to perform this calculation in view-space.
-    vec3 viewDir = normalize(viewPos - fragPos);
+    vec3 reflectDir = reflect(-lightDir, normal); 
 
-    // Note: The lightDir vector is negated. The reflect function expects the first vector 
-    // to point from the light source towards the fragment's position. The lightDir vector 
-    // currently points the other way around. To make sure we get the correct reflect vector
-    // we reverse the lightDir vector. 
-    vec3 reflectDir = reflect(-lightDir, norm); 
-
-    // Note: Calculate the angular distance between this reflection vector and the view direction.
-    // The closer the angle between them, the greater the impact of the specular light.
     float specularIntensity = pow(max(dot(reflectDir, viewDir), 0.0),material.shininess);
     vec3 specularColor = (texture(material.specular, texCoords).rgb * specularIntensity) * light.specular;
-
-    vec3 emissionColor = texture(material.emission, texCoords).rgb;
 
     diffuseColor    *= intensity;
     specularColor   *= intensity;
@@ -125,14 +178,33 @@ void main()
     diffuseColor    *= attenuation;
     specularColor   *= attenuation;
 
-    // output
-    // ----------
-    
-    vec3 rgbColor = ambientColor + diffuseColor + (specularColor);
-    // compare the cosine value of the light direction and the cutoff angle.
-    // If angle of light direction and spot direction is greater than the cutoff angle
-    // only ouput ambient color
-    // Remember: cos(0) = 1 & cos(90) = 0
+    return ambientColor + diffuseColor + specularColor;
+}
 
-    FragColor = vec4(rgbColor, 1.0);
+vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir)
+{
+    // directional light caster
+    vec3 lightDir = normalize(-light.direction);
+    
+    // ambient color
+    // ------------------
+    vec3 ambientColor = texture(material.diffuse, texCoords).rgb * light.ambient;
+    
+    // diffuse color
+    // ------------------
+    float cosineTerm = max(dot(normal, lightDir), 0.0);
+    vec3 diffuseColor = texture(material.diffuse, texCoords).rgb * cosineTerm * light.diffuse;
+    
+    // specular color
+    // ------------------
+    vec3 reflectDir = reflect(-lightDir, normal); 
+
+    // Note: Calculate the angular distance between this reflection vector and the view direction.
+    // The closer the angle between them, the greater the impact of the specular light.
+    float specularIntensity = pow(max(dot(reflectDir, viewDir), 0.0),material.shininess);
+    vec3 specularColor = texture(material.specular, texCoords).rgb * specularIntensity * light.specular;
+
+    // output
+    // ------------------
+    return ambientColor + diffuseColor + specularColor;
 }

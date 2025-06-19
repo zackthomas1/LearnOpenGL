@@ -1,29 +1,9 @@
 #version 330 core 
-struct Light{
-    vec3 position;
 
-    // Note: a light source has a different intensity for 
-    // ambient, diffuse, and specular components. 
-    vec3 ambient;   // Usually a low intensity
-    vec3 diffuse;   // Set to exact color of light source
-    vec3 specular;  // Usally kept at vec3(1.0) 
-};
-
-struct DirectionalLight{ 
-    vec3 direction;
-
-    vec3 ambient; 
-    vec3 diffuse; 
-    vec3 specular; 
-};
-
-in vec3 normal;
-
-uniform Light light;
-
+uniform vec3 emission;
 out vec4 FragColor;
 
 void main()
 {
-    FragColor = vec4(light.diffuse, 1.0f); // set all 4 vector values to 1.0
+    FragColor = vec4(emission, 1.0f); // set all 4 vector values to 1.0
 }

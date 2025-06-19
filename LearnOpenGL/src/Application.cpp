@@ -43,8 +43,6 @@ bool first_mouse = true;
 LearnOpenGL::FlyCamera camera;
 LearnOpenGL::DeltaTime& dt = LearnOpenGL::DeltaTime::getInstance();
 
-// initialize model, view, projection matrices
-glm::mat4 model = glm::mat4(1.0f); 
 
 //
 glm::vec3 cube_positions[] = {
@@ -130,6 +128,16 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertex_data), light_vertex_data, GL_STATIC_DRAW);
 	
+	// Light properties
+	glm::vec3 lightColor(1.0f);
+	//lightColor = lightColor * sin(dt.current_frame_time());
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	};
+
 	// SetAttributes ---
 	// aPos
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); 
@@ -168,37 +176,27 @@ int main(void) {
 		// input
 		ProcessInput(window, dt.delta_time());
 
-		// Light properties
-		glm::vec3 lightColor(2.0f);
-		//lightColor = lightColor * sin(dt.current_frame_time());
-
-
-		// represents light source location in world-space coordinates
-		glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-		glm::vec3 lightDir(-0.2f, -1.0f, -0.3f);
-
 		// Light Cube 
 		// ----------------------------------------
-		// activate shader for light objects
+		// activate shader for light emitting cubes
 		lightCubeShader.Use();
 
 		// fragment shader uniforms
-		lightCubeShader.SetVec3("light.diffuse", lightColor);
+		lightCubeShader.SetVec3("emission", lightColor);
 
-		//Update view, projection matrices (set uniforms) 
+		//set model, view, and projection matrices (set uniforms) 
 		lightCubeShader.SetMat4("view", camera.GetViewMatrix());
 		lightCubeShader.SetMat4("projection", camera.GetProjectionMatrix());
 
-		// Update model matrix 
-		glm::mat4 light_model = glm::mat4(1.0f);
-		light_model = glm::translate(light_model, lightPos);
+		// draw light cubes
+		for (int i = 0; i < sizeof(pointLightPositions) / sizeof(glm::vec3); i++) {
+			glm::mat4 model = glm::translate(glm::mat4(1.0f), pointLightPositions[i]);
+			lightCubeShader.SetMat4("model", model);
 
-		lightCubeShader.SetMat4("model", light_model);
-		lightCubeShader.SetVec3("light.direction", lightPos);
+			glBindVertexArray(lightCubeVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
-		// draw light cube
-		glBindVertexArray(lightCubeVAO); 
-		glDrawArrays(GL_TRIANGLES, 0, 36); 
 		// ----------------------------------------
 
 		// Scene Cubes
@@ -206,50 +204,92 @@ int main(void) {
 		// activate shader for non-light objects
 		shader.Use();
 
-		// Material parameters
-		// Bind and activate diffuse map, specular map, emission map
-		glActiveTexture(GL_TEXTURE0); 
+		// Light caster parameters
+		// -----------------------
+
+		// Directional light
+		shader.SetVec3("dirLight.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
+
+		shader.SetVec3("dirLight.ambient", lightColor * 0.1f);
+		shader.SetVec3("dirLight.diffuse", lightColor * 0.5f);
+		shader.SetVec3("dirLight.specular", lightColor * 1.0f);
+
+		// Point lights
+		for (int i = 0; i < sizeof(pointLightPositions) / sizeof(glm::vec3); i++) {
+			char buffer[100];
+			
+			// Light position
+			sprintf(buffer, "pointLights[%d].position", i);
+			std::string formatted_string = buffer;
+			shader.SetVec3(formatted_string, pointLightPositions[i]);
+			
+			// Light contribution
+			sprintf(buffer, "pointLights[%d].ambient", i);
+			formatted_string = buffer;
+			shader.SetVec3(formatted_string, lightColor * 0.1f);
+			
+			sprintf(buffer, "pointLights[%d].diffuse", i);
+			formatted_string = buffer;
+			shader.SetVec3(formatted_string, lightColor * 0.5f);
+			
+			sprintf(buffer, "pointLights[%d].specular", i);
+			formatted_string = buffer;
+			shader.SetVec3(formatted_string, lightColor * 1.0f);
+
+			// attenuation terms
+			sprintf(buffer, "pointLights[%d].constant", i);
+			formatted_string = buffer;
+			shader.SetFloat(formatted_string, 1.0f);
+			
+			sprintf(buffer, "pointLights[%d].linear", i);
+			formatted_string = buffer;
+			shader.SetFloat(formatted_string, 0.09f);
+
+			sprintf(buffer, "pointLights[%d].quadratic", i);
+			formatted_string = buffer;
+			shader.SetFloat(formatted_string, 0.032f);
+		}
+
+		// Spot light
+		shader.SetVec3("spotLight.position", camera.GetPosition());
+
+		shader.SetVec3("spotLight.ambient", lightColor * 0.1f);
+		shader.SetVec3("spotLight.diffuse", lightColor * 0.5f);
+		shader.SetVec3("spotLight.specular", lightColor * 1.0f);
+
+		shader.SetFloat("spotLight.constant", 1.0f);
+		shader.SetFloat("spotLight.linear", 0.09f);
+		shader.SetFloat("spotLight.quadratic", 0.032f);
+
+		shader.SetVec3("spotLight.spotDir", camera.GetForwardVec());
+		shader.SetFloat("spotLight.innerAngle", glm::cos(glm::radians(15.0f)));
+		shader.SetFloat("spotLight.outerAngle", glm::cos(glm::radians(18.0f)));
+
+		// Camera (position and view-projection)
+		// -------------------------------------
+		shader.SetVec3("viewPos", camera.GetPosition());
+		shader.SetMat4("view", camera.GetViewMatrix()); 
+		shader.SetMat4("projection", camera.GetProjectionMatrix());
+
+		// Cube Material parameters
+		// ---------------------
+		// Bind/activate diffuse map, specular map, emission map
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuse_map.id());
 		specular_map.Activate();
 		emission_map.Activate();
 
 		shader.SetFloat("material.shininess", 32.0f);
 
-		// Light caster parameters
-		//
-		shader.SetVec3("light.position", lightPos);
-		shader.SetVec3("light.ambient",		lightColor * 0.1f); 
-		shader.SetVec3("light.diffuse",		lightColor * 0.5f);
-		shader.SetVec3("light.specular",	lightColor * 1.0f);
-
-		// attenuation terms
-		shader.SetFloat("light.constant", 1.0f); 
-		shader.SetFloat("light.linear", 0.09f);
-		shader.SetFloat("light.quadratic", 0.032f);
-
-		// spot light parameters
-		shader.SetVec3("light.spotDir", glm::vec3(0.0f,0.0f,-1.0f)); 
-		shader.SetFloat("light.innerAngle", glm::cos(glm::radians(15.0f)));
-		shader.SetFloat("light.outerAngle", glm::cos(glm::radians(18.0f)));
-
-		// set camera view-project
-		shader.SetVec3("viewPos", camera.GetPosition());
-
-		//Update view, projection matrices (set uniforms) 
-		shader.SetMat4("view", camera.GetViewMatrix()); 
-		shader.SetMat4("projection", camera.GetProjectionMatrix());
-
 		// draw call cubes
 		for (int i = 0; i < sizeof(cube_positions) / sizeof(glm::vec3); i++)
 		{
 			// Update model matrix
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, cube_positions[i]);
+			glm::mat4 model = glm::translate(glm::mat4(1.0f), cube_positions[i]);
 			float angle = 20.0f * i;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			
-			if (i % 3 == 0) 
-			{
+			if (i % 3 == 0){
 				model = glm::rotate(model, dt.current_frame_time() * glm::radians(25.0f), glm::vec3(1.0f, 1.0f, 0.0f));
 			}
 			model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -257,7 +297,6 @@ int main(void) {
 			shader.SetMat4("model", model);
 			cube.Draw();
 		}
-		// ----------------------------------------
 
 		// check and call events and swap buffers
 		glfwPollEvents();

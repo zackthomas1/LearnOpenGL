@@ -38,6 +38,7 @@ namespace LearnOpenGL
 
 		// getter/setters
 		glm::vec3 GetPosition() const { return camera_position_; }
+		glm::vec3 GetForwardVec() const { return camera_front_; }
 		virtual glm::mat4 GetViewMatrix() const;
 		virtual glm::mat4 GetProjectionMatrix() const = 0;
 
