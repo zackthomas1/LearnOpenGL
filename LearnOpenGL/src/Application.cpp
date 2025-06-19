@@ -130,6 +130,7 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertex_data), light_vertex_data, GL_STATIC_DRAW);
 	
+	// SetAttributes ---
 	// aPos
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); 
 	glEnableVertexAttribArray(0); 
@@ -145,11 +146,13 @@ int main(void) {
 	// load container texture
 	LearnOpenGL::Texture2D diffuse_map("../assets/textures/container2.png", false);
 	LearnOpenGL::Texture2D specular_map("../assets/textures/container2_specular.png", false);
-	
+	LearnOpenGL::Texture2D emission_map("../assets/textures/container2_emission.jpg", false);
+
 	// shader configuration
 	shader.Use(); 
 	shader.SetInt("material.diffuse", diffuse_map.id() - 1);
 	shader.SetInt("material.specular", specular_map.id() - 1);
+	shader.SetInt("material.emission", emission_map.id() - 1);
 
 	// Render loop 
 	while (!glfwWindowShouldClose(window))
@@ -203,15 +206,15 @@ int main(void) {
 		// activate shader for non-light objects
 		shader.Use();
 
-		// Bind and activeate diffuse and specular maps
+		// Bind and activate diffuse map
 		glActiveTexture(GL_TEXTURE0); 
 		glBindTexture(GL_TEXTURE_2D, diffuse_map.id());
+		//Bind and activate specular map
 		specular_map.Activate();
+		//Bind and activate emission map
+		emission_map.Activate();
 
 		// fragment shader uniforms
-		shader.SetVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-		shader.SetVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-		shader.SetVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		shader.SetFloat("material.shininess", 32.0f);
 
 		shader.SetVec3("light.position",	lightPos);

@@ -8,6 +8,7 @@ struct Material{
     // the same thus applies to any struct holding such opaque types.
     sampler2D diffuse;
     sampler2D specular;
+    sampler2D emission;
 
     // Note: The higher the shininess value of an object, the more it properly reflects the light 
     // instead of scattering it all around and thus the smaller the highlight becomes.
@@ -66,10 +67,13 @@ void main()
     // Note: Calculate the angular distance between this reflection vector and the view direction.
     // The closer the angle between them, the greater the impact of the specular light.
     float specularIntensity = pow(max(dot(reflectDir, viewDir), 0.0),material.shininess);
-    vec3 specularColor = (vec3(texture(material.specular, texCoords)) * specularIntensity) * light.specular;
+    vec3 specularColor = (texture(material.specular, texCoords).rgb * specularIntensity) * light.specular;
+
+    vec3 emissionColor = texture(material.emission, texCoords).rgb;
 
     // output
     // ----------
-    vec3 rgbColor = ambientColor + diffuseColor + specularColor;
+    vec3 rgbColor = ambientColor + diffuseColor + specularColor + emissionColor;
+
     FragColor = vec4(rgbColor, 1.0);
 }

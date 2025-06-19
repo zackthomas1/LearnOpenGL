@@ -34,37 +34,42 @@ project "LearnOpenGL"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
-	pchheader "pch.h"
-	pchsource "LearnOpenGL/src/pch.cpp"
+    pchheader "pch.h"
+    pchsource "LearnOpenGL/src/pch.cpp"
 
-files
-{
-    "%{prj.name}/src/**.h",
-    "%{prj.name}/src/**.cpp"
-}
-
---[[
-    defines{
-
+    files
+    {
+        "%{prj.name}/src/**.h",
+        "%{prj.name}/src/**.cpp"
     }
-]]
 
-includedirs
-{
-    "%{prj.name}/src",
-    "%{IncludeDir.GLFW}",
-    "%{IncludeDir.glad}",
-    "%{IncludeDir.stb}",
-    "%{IncludeDir.glm}",
-    "%{IncludeDir.spdlog}",
-}
+    --[[
+        defines{
 
-links
-{
-    "GLFW",
-    "glad",
-    "opengl32.lib",
-}
+        }
+    ]]
+
+    includedirs
+    {
+        "%{prj.name}/src",
+        "%{IncludeDir.GLFW}",
+        "%{IncludeDir.glad}",
+        "%{IncludeDir.stb}",
+        "%{IncludeDir.glm}",
+        "%{IncludeDir.spdlog}",
+    }
+
+    links
+    {
+        "GLFW",
+        "glad",
+        "opengl32.lib",
+    }
+
+    postbuildcommands
+    {
+        ("{COPYDIR} %{wks.location}/assets %{cfg.targetdir}/../assets")
+    }
 
 filter "system:windows"
     systemversion "latest"
