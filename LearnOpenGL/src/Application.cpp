@@ -169,13 +169,13 @@ int main(void) {
 		ProcessInput(window, dt.delta_time());
 
 		// Light properties
-		glm::vec3 lightColor(1.0f);
-		//lightColor.x = sin(dt.current_frame_time() * 2.0f);
-		//lightColor.y = sin(dt.current_frame_time() * 0.7f);
-		//lightColor.z = sin(dt.current_frame_time() * 1.3f);
+		glm::vec3 lightColor(2.0f);
+		//lightColor = lightColor * sin(dt.current_frame_time());
+
 
 		// represents light source location in world-space coordinates
 		glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+		glm::vec3 lightDir(-0.2f, -1.0f, -0.3f);
 
 		// Light Cube 
 		// ----------------------------------------
@@ -183,7 +183,7 @@ int main(void) {
 		lightCubeShader.Use();
 
 		// fragment shader uniforms
-		lightCubeShader.SetVec3("light.diffuse", lightColor * glm::vec3(2.0f));
+		lightCubeShader.SetVec3("light.diffuse", lightColor);
 
 		//Update view, projection matrices (set uniforms) 
 		lightCubeShader.SetMat4("view", camera.GetViewMatrix());
@@ -192,9 +192,9 @@ int main(void) {
 		// Update model matrix 
 		glm::mat4 light_model = glm::mat4(1.0f);
 		light_model = glm::translate(light_model, lightPos);
-		light_model = glm::scale(light_model, glm::vec3(0.75f));
 
 		lightCubeShader.SetMat4("model", light_model);
+		lightCubeShader.SetVec3("light.direction", lightPos);
 
 		// draw light cube
 		glBindVertexArray(lightCubeVAO); 
@@ -206,22 +206,33 @@ int main(void) {
 		// activate shader for non-light objects
 		shader.Use();
 
-		// Bind and activate diffuse map
+		// Material parameters
+		// Bind and activate diffuse map, specular map, emission map
 		glActiveTexture(GL_TEXTURE0); 
 		glBindTexture(GL_TEXTURE_2D, diffuse_map.id());
-		//Bind and activate specular map
 		specular_map.Activate();
-		//Bind and activate emission map
 		emission_map.Activate();
 
-		// fragment shader uniforms
 		shader.SetFloat("material.shininess", 32.0f);
 
-		shader.SetVec3("light.position",	lightPos);
-		shader.SetVec3("light.ambient",		lightColor * glm::vec3(0.1f)); 
-		shader.SetVec3("light.diffuse",		lightColor * glm::vec3(0.5f));
-		shader.SetVec3("light.specular",	lightColor * glm::vec3(1.0f));
+		// Light caster parameters
+		//
+		shader.SetVec3("light.position", lightPos);
+		shader.SetVec3("light.ambient",		lightColor * 0.1f); 
+		shader.SetVec3("light.diffuse",		lightColor * 0.5f);
+		shader.SetVec3("light.specular",	lightColor * 1.0f);
 
+		// attenuation terms
+		shader.SetFloat("light.constant", 1.0f); 
+		shader.SetFloat("light.linear", 0.09f);
+		shader.SetFloat("light.quadratic", 0.032f);
+
+		// spot light parameters
+		shader.SetVec3("light.spotDir", glm::vec3(0.0f,0.0f,-1.0f)); 
+		shader.SetFloat("light.innerAngle", glm::cos(glm::radians(15.0f)));
+		shader.SetFloat("light.outerAngle", glm::cos(glm::radians(18.0f)));
+
+		// set camera view-project
 		shader.SetVec3("viewPos", camera.GetPosition());
 
 		//Update view, projection matrices (set uniforms) 
