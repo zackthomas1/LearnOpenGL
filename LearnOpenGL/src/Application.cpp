@@ -18,6 +18,9 @@
 #include "cameras/fly_camera.h"
 #include "cameras/orthographic_camera.h"
 
+//#include <assimp/Importer.hpp>
+
+
 // Declare functions
 void ProcessInput(GLFWwindow* window, float time_step);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);

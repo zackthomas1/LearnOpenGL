@@ -19,10 +19,12 @@ IncludeDir["glad"]      = "LearnOpenGL/vendor/glad/include"
 IncludeDir["stb"]       = "LearnOpenGL/vendor/stb"
 IncludeDir["glm"]       = "LearnOpenGL/vendor/glm"
 IncludeDir["spdlog"]    = "LearnOpenGL/vendor/spdlog/include"
+IncludeDir["assimp"]     = "LearnOpenGL/vendor/assimp/bin/include"
 
 group "Dependencies"
     include "LearnOpenGL/vendor/GLFW"
     include "LearnOpenGL/vendor/glad"
+    include "LearnOpenGL/vendor/assimp"
 group ""
 
 project "LearnOpenGL"
@@ -43,11 +45,11 @@ project "LearnOpenGL"
         "%{prj.name}/src/**.cpp"
     }
 
-    --[[
-        defines{
 
-        }
-    ]]
+    -- defines{
+
+    -- }
+
 
     includedirs
     {
@@ -57,6 +59,7 @@ project "LearnOpenGL"
         "%{IncludeDir.stb}",
         "%{IncludeDir.glm}",
         "%{IncludeDir.spdlog}",
+        "%{IncludeDir.assimp}",
     }
 
     links
@@ -64,6 +67,7 @@ project "LearnOpenGL"
         "GLFW",
         "glad",
         "opengl32.lib",
+        "assimp",
     }
 
     postbuildcommands
