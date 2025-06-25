@@ -142,7 +142,7 @@ int main(void) {
 		glm::vec3(0.0f,  0.0f, -3.0f)
 	};
 
-	// SetAttributes ---
+	// Set Attributes ---
 	// aPos
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); 
 	glEnableVertexAttribArray(0); 
