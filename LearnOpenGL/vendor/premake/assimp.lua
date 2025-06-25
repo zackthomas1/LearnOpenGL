@@ -17,6 +17,9 @@ project "assimp"
     filter "configurations:Release"
         runtime "Release"
         optimize "speed"
+    filter "configurations:Dist"
+        runtime "Release"
+        optimize "On"
     filter{}
     
     local cmakeFlags = {
@@ -37,8 +40,7 @@ project "assimp"
     local assimplib = path.join(assimpbuilddir, "lib", "%{cfg.buildcfg}", "assimp.lib")
     local zliblib   = path.join(assimpbuilddir, "contrib", "zlib", "%{cfg.buildcfg}", "zlibstaticd.lib")
 
-    buildcommands 
-    {
+    buildcommands {
         "cmake -S " .. assimpdir ..
         " -B " .. assimpbuilddir ..
         " -G \"Visual Studio 16 2019\" -A x64" ..
@@ -46,8 +48,7 @@ project "assimp"
     }
 
     -- 2) Build step
-    buildcommands 
-    {
+    buildcommands {
         "cmake --build " .. assimpbuilddir .. " --config %{cfg.buildcfg}"
     }
 
@@ -55,18 +56,32 @@ project "assimp"
     buildoutputs { "%{cfg.buildcfg}/assimp.lib" }
 
     -- 4) copy libs to bin/ directory
+    -- copy the Assimp static lib
     local assimplib = path.join(assimpbuilddir, "lib", "%{cfg.buildcfg}", "assimp.lib")
-    local zliblib   = path.join(assimpbuilddir, "contrib", "zlib", "%{cfg.buildcfg}", "zlibstaticd.lib")
-
-    postbuildcommands
-    {
-        -- copy the Assimp static lib
+    postbuildcommands {
         ('{COPY} "%s" "%s"'):format(assimplib, bindir),
-        -- copy the ZLib static lib
-        ('{COPY} "%s" "%s"'):format(zliblib,   bindir),
     }
-    postbuildmessage (
-        ('{COPY} "%s" "%s"'):format(assimplib, bindir)
-        .. "\n" .. 
-        ('{COPY} "%s" "%s"'):format(zliblib,   bindir),
-    )
+    postbuildmessage (('{COPY} "%s" "%s"'):format(assimplib, bindir))
+    
+    -- copy the ZLib static lib
+    local zliblib   = path.join(assimpbuilddir, "contrib", "zlib", "%{cfg.buildcfg}")
+    filter "configurations:Debug"
+        postbuildcommands{
+            ('{COPY} "%s" "%s"'):format(path.join(zliblib, "zlibstaticd.lib"), bindir),
+        }
+    filter "configurations:Release"
+        postbuildcommands{
+            ('{COPY} "%s" "%s"'):format(path.join(zliblib, "zlibstatic.lib"), bindir),
+        }
+    filter "configurations:Dist"
+        postbuildcommands{
+            ('{COPY} "%s" "%s"'):format(path.join(zliblib, "zlibstatic.lib"), bindir),
+        }
+    filter{}
+    postbuildmessage (('{COPY} "%s" "%s"'):format(zliblib, bindir))
+
+    -- 5) Remove temp build directories
+    postbuildcommands {
+        ('{RMDIR} "%s"'):format(path.join( vendordir, "premake", "%{cfg.buildcfg}" ))
+    }
+    postbuildmessage (('{RMDIR} "%s"'):format(path.join( vendordir, "premake", "%{cfg.buildcfg}" )))
