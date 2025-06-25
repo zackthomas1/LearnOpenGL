@@ -73,4 +73,5 @@ project "assimp"
     filter "configurations:Dist"
         runtime "Release"
         optimize "On"
+        symbols "off"
         addCMakeBuild("Release")
