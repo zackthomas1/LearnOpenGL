@@ -10,3 +10,6 @@
 [submodule "LearnOpenGL/vendor/spdlog"]
 	path = LearnOpenGL/vendor/spdlog
 	url = https://github.com/gabime/spdlog
+[submodule "LearnOpenGL/vendor/assimp"]
+	path = LearnOpenGL/vendor/assimp
+	url = https://github.com/assimp/assimp.git
