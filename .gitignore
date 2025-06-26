@@ -1,5 +1,8 @@
 # Directories 
-assets/
+/assets/**
+!/assets/shaders/
+!/assets/shaders/**
+
 .vs/
 bin/
 bin-int/
