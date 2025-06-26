@@ -10,18 +10,9 @@ namespace LearnOpenGL
 
 		void Draw() const override;
 	private:
-		float vertices_[32] = {
-			// positions			// colors			// uv
-			 0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	1.0f, 1.0f,	// top right 
-			 0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	1.0f, 0.0f, // bottom right
-			-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	0.0f, 0.0f, // bottom left
-			-0.5f,  0.5f, 0.0f,		1.0f, 1.0f, 0.0f,	0.0f, 1.0f	// top left
-		};
+		static const float vertices_[32];
 
 		//  Element Buffer Object (EBO)
-		unsigned int indices_[6] = {
-			0,1,3,	// first triangle
-			1,2,3,	// second triangle
-		};
+		static const unsigned int indices_[6];
 	};
 }
