@@ -19,6 +19,7 @@ namespace LearnOpenGL
 	struct Texture {
 		unsigned int id;
 		std::string type;
+		std::string path;	// store path of texture to compare with other textures
 	};
 
 	class Mesh
@@ -29,9 +30,9 @@ namespace LearnOpenGL
 		void Draw(Shader shader);
 
 		// mesh data 
-		std::vector<Vertex>			vertices; 
-		std::vector<unsigned int>	indices; 
-		std::vector<Texture>		textures;
+		std::vector<Vertex>			m_vertices; 
+		std::vector<unsigned int>	m_indices; 
+		std::vector<Texture>		m_textures;
 	private:
 		unsigned int  VOA_, VBO_, EBO_; 
 

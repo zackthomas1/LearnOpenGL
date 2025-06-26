@@ -5,7 +5,7 @@
 namespace LearnOpenGL {
 
 	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) : 
-		vertices(vertices), indices(indices), textures(textures)
+		m_vertices(vertices), m_indices(indices), m_textures(textures)
 	{
 		setupMesh(); 
 	}
@@ -14,28 +14,31 @@ namespace LearnOpenGL {
 	{
 		unsigned int diffuseNR = 1; 
 		unsigned int specularNR = 1; 
-		for (unsigned int i = 0; i < textures.size(); i ++) {
+		for (unsigned int i = 0; i < m_textures.size(); i++) {
 			//activate proper texture unit before binding
 			glActiveTexture(GL_TEXTURE0 + i);
 
 			//retrieve texture number (the N in diffuse_textureN)
 			std::string number; 
-			std::string name = textures[i].type; 
+			std::string name = m_textures[i].type; 
 
 			if (name == "texture_diffuse")
 				number = std::to_string(diffuseNR++);
 			else if (name == "texture_specular")
 				number = std::to_string(specularNR++);
 
-			shader.SetInt(("material." + name + number).c_str(), i); 
-			glBindTexture(GL_TEXTURE_2D, textures[i].id);
+			shader.SetInt(("material." + name + number).c_str(), i);
+			glBindTexture(GL_TEXTURE_2D, m_textures[i].id);
 		}
-		glActiveTexture(GL_TEXTURE0); 
 
 		// draw mesh 
 		glBindVertexArray(VOA_); 
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0); 
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	// render primitives as wireframes
+		glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(m_indices.size()), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
+
+		//set back to defaults once configured
+		glActiveTexture(GL_TEXTURE0);
 	}
 	
 	void Mesh::setupMesh()
@@ -43,15 +46,20 @@ namespace LearnOpenGL {
 		// Gen buffers
 		glGenVertexArrays(1, &VOA_);
 		glGenBuffers(1, &VBO_);
+		glGenBuffers(1, &EBO_);
 
 		// Bind buffers
 		glBindVertexArray(VOA_);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO_);
 
 		// Set vertice buffer
-		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), &m_vertices[0], GL_STATIC_DRAW);
+
+		// Set element array buffer 
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_); 
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0], GL_STATIC_DRAW);
 		
-		// Set Attributes
+		// Set vertex attribute pointers
 		// --------------
 		// aPos
 		glEnableVertexAttribArray(0);
@@ -67,6 +75,5 @@ namespace LearnOpenGL {
 
 		// Release vertex array objecct 
 		glBindVertexArray(0);
-
 	}
 }
