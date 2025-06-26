@@ -14,11 +14,10 @@
 #include "texture_2d.h"
 #include "primatives/cube.h"
 #include "primatives/plane.h"
+#include "Model.h"
 #include "delta_time.h"
 #include "cameras/fly_camera.h"
 #include "cameras/orthographic_camera.h"
-
-#include <assimp/Importer.hpp>
 
 // Declare functions
 void ProcessInput(GLFWwindow* window, float time_step);
@@ -26,8 +25,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLFWwindow* CreateGLFWWindow();
-
-Assimp::Importer importer;
 
 // Declare window size constants
 const unsigned int kWidth = 800;
@@ -47,21 +44,6 @@ bool first_mouse = true;
 LearnOpenGL::FlyCamera camera;
 LearnOpenGL::DeltaTime& dt = LearnOpenGL::DeltaTime::getInstance();
 
-
-//
-glm::vec3 cube_positions[] = {
-	glm::vec3(0.0f,  0.0f,  0.0f),
-	glm::vec3(2.0f,  5.0f, -15.0f),
-	glm::vec3(-1.5f, -2.2f, -2.5f),
-	glm::vec3(-3.8f, -2.0f, -12.3f),
-	glm::vec3(2.4f, -0.4f, -3.5f),
-	glm::vec3(-1.7f,  3.0f, -7.5f),
-	glm::vec3(1.3f, -2.0f, -2.5f),
-	glm::vec3(1.5f,  2.0f, -2.5f),
-	glm::vec3(1.5f,  0.2f, -1.5f),
-	glm::vec3(-1.3f,  1.0f, -1.5f)
-};
-
 int main(void) {
 	LearnOpenGL::Log::Init(); 
 	TY_CORE_INFO("Initialize Logging");
@@ -71,100 +53,15 @@ int main(void) {
 	if (window == nullptr)
 		return -1;
 
-	// create shader program
-	LearnOpenGL::Shader shader("../assets/shaders/2_lighting_object.vs", "../assets/shaders/2_lighting_object.fs");
+	// create shader programs
+	LearnOpenGL::Shader shader("../assets/shaders/3_model_loading.vs", "../assets/shaders/3_model_loading.fs");
 	LearnOpenGL::Shader lightCubeShader("../assets/shaders/2_lighting_lightcube.vs", "../assets/shaders/2_lighting_lightcube.fs");
 
-	// define vertex data  
-	LearnOpenGL::Plane plane;
-	LearnOpenGL::Cube cube;
-
-	// light vertex data
-	float light_vertex_data[288] = {
-		// positions          // normals           // texture coords
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-	};
-	unsigned int VBO, lightCubeVAO;
-	glGenVertexArrays(1, &lightCubeVAO);
-	glGenBuffers(1, &VBO); 
-
-	glBindVertexArray(lightCubeVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertex_data), light_vertex_data, GL_STATIC_DRAW);
+	//Initialize modles
+	LearnOpenGL::Model backpack("../assets/models/backpack/backpack.obj");
 	
 	// Light properties
-	glm::vec3 lightColor(1.0f);
-	//lightColor = lightColor * sin(dt.current_frame_time());
-	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.7f,  0.2f,  2.0f),
-		glm::vec3(2.3f, -3.3f, -4.0f),
-		glm::vec3(-4.0f,  2.0f, -12.0f),
-		glm::vec3(0.0f,  0.0f, -3.0f)
-	};
-
-	// Set Attributes ---
-	// aPos
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); 
-	glEnableVertexAttribArray(0); 
-
-	// aNormal
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	// aTexCoords
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	// load container texture
-	LearnOpenGL::Texture2D diffuse_map("../assets/textures/container2.png", false);
-	LearnOpenGL::Texture2D specular_map("../assets/textures/container2_specular.png", false);
-	LearnOpenGL::Texture2D emission_map("../assets/textures/container2_emission.jpg", false);
-
-	// shader configuration
-	shader.Use(); 
-	shader.SetInt("material.diffuse", diffuse_map.id() - 1);
-	shader.SetInt("material.specular", specular_map.id() - 1);
-	shader.SetInt("material.emission", emission_map.id() - 1);
+	glm::vec3 lightColor(2.0f);
 
 	// Render loop 
 	while (!glfwWindowShouldClose(window))
@@ -180,30 +77,7 @@ int main(void) {
 		// input
 		ProcessInput(window, dt.delta_time());
 
-		// Light Cube 
-		// ----------------------------------------
-		// activate shader for light emitting cubes
-		lightCubeShader.Use();
-
-		// fragment shader uniforms
-		lightCubeShader.SetVec3("emission", lightColor);
-
-		//set model, view, and projection matrices (set uniforms) 
-		lightCubeShader.SetMat4("view", camera.GetViewMatrix());
-		lightCubeShader.SetMat4("projection", camera.GetProjectionMatrix());
-
-		// draw light cubes
-		for (int i = 0; i < sizeof(pointLightPositions) / sizeof(glm::vec3); i++) {
-			glm::mat4 model = glm::translate(glm::mat4(1.0f), pointLightPositions[i]);
-			lightCubeShader.SetMat4("model", model);
-
-			glBindVertexArray(lightCubeVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-
-		// ----------------------------------------
-
-		// Scene Cubes
+		// Scene
 		// ----------------------------------------
 		// activate shader for non-light objects
 		shader.Use();
@@ -218,89 +92,17 @@ int main(void) {
 		shader.SetVec3("dirLight.diffuse", lightColor * 0.5f);
 		shader.SetVec3("dirLight.specular", lightColor * 1.0f);
 
-		// Point lights
-		for (int i = 0; i < sizeof(pointLightPositions) / sizeof(glm::vec3); i++) {
-			char buffer[100];
-			
-			// Light position
-			sprintf(buffer, "pointLights[%d].position", i);
-			std::string formatted_string = buffer;
-			shader.SetVec3(formatted_string, pointLightPositions[i]);
-			
-			// Light contribution
-			sprintf(buffer, "pointLights[%d].ambient", i);
-			formatted_string = buffer;
-			shader.SetVec3(formatted_string, lightColor * 0.1f);
-			
-			sprintf(buffer, "pointLights[%d].diffuse", i);
-			formatted_string = buffer;
-			shader.SetVec3(formatted_string, lightColor * 0.5f);
-			
-			sprintf(buffer, "pointLights[%d].specular", i);
-			formatted_string = buffer;
-			shader.SetVec3(formatted_string, lightColor * 1.0f);
-
-			// attenuation terms
-			sprintf(buffer, "pointLights[%d].constant", i);
-			formatted_string = buffer;
-			shader.SetFloat(formatted_string, 1.0f);
-			
-			sprintf(buffer, "pointLights[%d].linear", i);
-			formatted_string = buffer;
-			shader.SetFloat(formatted_string, 0.09f);
-
-			sprintf(buffer, "pointLights[%d].quadratic", i);
-			formatted_string = buffer;
-			shader.SetFloat(formatted_string, 0.032f);
-		}
-
-		// Spot light
-		shader.SetVec3("spotLight.position", camera.GetPosition());
-
-		shader.SetVec3("spotLight.ambient", lightColor * 0.1f);
-		shader.SetVec3("spotLight.diffuse", lightColor * 0.5f);
-		shader.SetVec3("spotLight.specular", lightColor * 1.0f);
-
-		shader.SetFloat("spotLight.constant", 1.0f);
-		shader.SetFloat("spotLight.linear", 0.09f);
-		shader.SetFloat("spotLight.quadratic", 0.032f);
-
-		shader.SetVec3("spotLight.spotDir", camera.GetForwardVec());
-		shader.SetFloat("spotLight.innerAngle", glm::cos(glm::radians(15.0f)));
-		shader.SetFloat("spotLight.outerAngle", glm::cos(glm::radians(18.0f)));
-
 		// Camera (position and view-projection)
 		// -------------------------------------
 		shader.SetVec3("viewPos", camera.GetPosition());
 		shader.SetMat4("view", camera.GetViewMatrix()); 
 		shader.SetMat4("projection", camera.GetProjectionMatrix());
 
-		// Cube Material parameters
-		// ---------------------
-		// Bind/activate diffuse map, specular map, emission map
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuse_map.id());
-		specular_map.Activate();
-		emission_map.Activate();
-
-		shader.SetFloat("material.shininess", 32.0f);
-
-		// draw call cubes
-		for (int i = 0; i < sizeof(cube_positions) / sizeof(glm::vec3); i++)
-		{
-			// Update model matrix
-			glm::mat4 model = glm::translate(glm::mat4(1.0f), cube_positions[i]);
-			float angle = 20.0f * i;
-			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			
-			if (i % 3 == 0){
-				model = glm::rotate(model, dt.current_frame_time() * glm::radians(25.0f), glm::vec3(1.0f, 1.0f, 0.0f));
-			}
-			model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-			
-			shader.SetMat4("model", model);
-			cube.Draw();
-		}
+		// backpack model
+		// -------------------------------------
+		float rotate = glm::radians(45.0f * ((glm::sin(dt.current_frame_time()) + 1) / 2.0f));
+		shader.SetMat4("model", glm::rotate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), rotate, glm::vec3(0.0f, 1.0f, 0.0f)));
+		backpack.Draw(shader);
 
 		// check and call events and swap buffers
 		glfwPollEvents();
@@ -355,7 +157,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
 	if (key == GLFW_KEY_UP && action == GLFW_PRESS)
 	{
-		std::cout << "Key Up Press" << std::endl;
+		TY_CORE_TRACE("Key Up Press");
 		alpha_tex += 0.1;
 		if (alpha_tex > 1.0)
 		{
@@ -364,7 +166,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 	{
-		std::cout << "Key Down Press" << std::endl;
+		TY_CORE_TRACE("Key Down Press");
 		alpha_tex -= 0.1;
 		if (alpha_tex < 0.0)
 		{
@@ -374,13 +176,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 	if (key == GLFW_KEY_LEFT_BRACKET && action == GLFW_PRESS)
 	{
-		std::cout << "Key Left Bracket Press" << std::endl;
+		TY_CORE_TRACE("Key Left Bracket Press");
 		scale_tex += 0.1;
 
 	}
 	if (key == GLFW_KEY_RIGHT_BRACKET && action == GLFW_PRESS)
 	{
-		std::cout << "Key Right Bracket Press" << std::endl;
+		TY_CORE_TRACE("Key Right Bracket Press");
 		scale_tex -= 0.1;
 		if (scale_tex < 0.0)
 			scale_tex = 0.0;
