@@ -59,7 +59,9 @@ int main(void) {
 
     //Initialize modles
     LearnOpenGL::Model backpack("../assets/models/backpack/backpack.obj");
-    
+    LearnOpenGL::Model cyborg("../assets/models/cyborg/cyborg.obj");
+    LearnOpenGL::Model nanosuit("../assets/models/nanosuit/nanosuit.obj");
+
     // Light properties
     glm::vec3 lightColor(2.0f);
 
@@ -82,9 +84,8 @@ int main(void) {
         // activate shader for non-light objects
         shader.Use();
 
-        // Light caster parameters
+        // Light casters
         // -----------------------
-
         // Directional light
         shader.SetVec3("dirLight.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
 
@@ -99,10 +100,15 @@ int main(void) {
         shader.SetMat4("projection", camera.GetProjectionMatrix());
 
         // backpack model
-        // -------------------------------------
         float rotate = glm::radians(45.0f * ((glm::sin(dt.current_frame_time()) + 1) / 2.0f));
         shader.SetMat4("model", glm::rotate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), rotate, glm::vec3(0.0f, 1.0f, 0.0f)));
         backpack.Draw(shader);
+
+        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), glm::vec3(1.0f, 1.0f, 0.0f)));
+        cyborg.Draw(shader);
+
+        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), glm::vec3(-1.0f, -1.0f, 0.0f)));
+        nanosuit.Draw(shader);
 
         // check and call events and swap buffers
         glfwPollEvents();
