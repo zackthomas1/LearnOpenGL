@@ -30,13 +30,6 @@ GLFWwindow* CreateGLFWWindow();
 const unsigned int kWidth = 800;
 const unsigned int kHeight = 600;
 
-// uniform variables 
-// adjust texture coordinates in fragment shader
-float alpha_tex = 0.5;
-float x_pos_tex = 0.0; 
-float y_pos_tex = 0.0; 
-float scale_tex = 1.0;
-
 //
 float last_x = (float)kWidth / 2.0f, last_y = (float)kHeight / 2.0f;
 bool first_mouse = true;
@@ -54,13 +47,13 @@ int main(void) {
         return -1;
 
     // create shader programs
-    LearnOpenGL::Shader shader("../assets/shaders/3_model_loading.vs", "../assets/shaders/3_model_loading.fs");
-    LearnOpenGL::Shader lightCubeShader("../assets/shaders/2_lighting_lightcube.vs", "../assets/shaders/2_lighting_lightcube.fs");
+    LearnOpenGL::Shader shader("../assets/shaders/4_1_depth_buffer.vs", "../assets/shaders/4_1_depth_buffer.fs");
 
     //Initialize modles
     LearnOpenGL::Model backpack("../assets/models/backpack/backpack.obj");
     LearnOpenGL::Model cyborg("../assets/models/cyborg/cyborg.obj");
     LearnOpenGL::Model nanosuit("../assets/models/nanosuit/nanosuit.obj");
+    LearnOpenGL::Cube cube;
 
     // Light properties
     glm::vec3 lightColor(2.0f);
@@ -70,6 +63,9 @@ int main(void) {
     {
         // rendering commands 
         glEnable(GL_DEPTH_TEST);
+        //glDepthMask(GL_FALSE)
+        //glDepthFunc(GL_EQUAL);
+
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -84,31 +80,29 @@ int main(void) {
         // activate shader for non-light objects
         shader.Use();
 
-        // Light casters
-        // -----------------------
-        // Directional light
-        shader.SetVec3("dirLight.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
-
-        shader.SetVec3("dirLight.ambient", lightColor * 0.1f);
-        shader.SetVec3("dirLight.diffuse", lightColor * 0.5f);
-        shader.SetVec3("dirLight.specular", lightColor * 1.0f);
-
-        // Camera (position and view-projection)
-        // -------------------------------------
         shader.SetVec3("viewPos", camera.GetPosition());
-        shader.SetMat4("view", camera.GetViewMatrix()); 
+        shader.SetMat4("view", camera.GetViewMatrix());
         shader.SetMat4("projection", camera.GetProjectionMatrix());
+        
+        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)), glm::vec3(5.0f, 0.0f, 0.0f)));
+        cube.Draw();
 
-        // backpack model
-        float rotate = glm::radians(45.0f * ((glm::sin(dt.current_frame_time()) + 1) / 2.0f));
-        shader.SetMat4("model", glm::rotate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), rotate, glm::vec3(0.0f, 1.0f, 0.0f)));
-        backpack.Draw(shader);
+        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(4.0f)), glm::vec3(0.0f, 0.0f, 0.0f)));
+        cube.Draw();
 
-        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), glm::vec3(1.0f, 1.0f, 0.0f)));
-        cyborg.Draw(shader);
+        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(8.0f)), glm::vec3(-5.0f, 0.0f, 0.0f)));
+        cube.Draw();
 
-        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), glm::vec3(-1.0f, -1.0f, 0.0f)));
-        nanosuit.Draw(shader);
+        //// backpack model
+        //float rotate = glm::radians(45.0f * ((glm::sin(dt.current_frame_time()) + 1) / 2.0f));
+        //shader.SetMat4("model", glm::rotate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), rotate, glm::vec3(0.0f, 1.0f, 0.0f)));
+        //backpack.Draw(shader);
+
+        //shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), glm::vec3(1.0f, 1.0f, 0.0f)));
+        //cyborg.Draw(shader);
+
+        //shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), glm::vec3(-1.0f, -1.0f, 0.0f)));
+        //nanosuit.Draw(shader);
 
         // check and call events and swap buffers
         glfwPollEvents();
@@ -161,38 +155,7 @@ void ProcessInput(GLFWwindow* window, float time_step)
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_UP && action == GLFW_PRESS)
-    {
-        TY_CORE_TRACE("Key Up Press");
-        alpha_tex += 0.1;
-        if (alpha_tex > 1.0)
-        {
-            alpha_tex = 1.0;
-        }
-    }
-    if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
-    {
-        TY_CORE_TRACE("Key Down Press");
-        alpha_tex -= 0.1;
-        if (alpha_tex < 0.0)
-        {
-            alpha_tex = 0.0; 
-        }
-    }
 
-    if (key == GLFW_KEY_LEFT_BRACKET && action == GLFW_PRESS)
-    {
-        TY_CORE_TRACE("Key Left Bracket Press");
-        scale_tex += 0.1;
-
-    }
-    if (key == GLFW_KEY_RIGHT_BRACKET && action == GLFW_PRESS)
-    {
-        TY_CORE_TRACE("Key Right Bracket Press");
-        scale_tex -= 0.1;
-        if (scale_tex < 0.0)
-            scale_tex = 0.0;
-    }
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) 
