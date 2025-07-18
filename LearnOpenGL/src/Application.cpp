@@ -47,26 +47,47 @@ int main(void) {
         return -1;
 
     // create shader programs
-    LearnOpenGL::Shader shader("../assets/shaders/4_1_depth_buffer.vs", "../assets/shaders/4_1_depth_buffer.fs");
-    LearnOpenGL::Shader outline_shader("../assets/shaders/4_2_stencil_outline.vs", "../assets/shaders/4_2_stencil_outline.fs");
+    LearnOpenGL::Shader shader("../assets/shaders/4_3_blending.vs", "../assets/shaders/4_3_blending.fs");
 
     //Initialize modles
     LearnOpenGL::Cube cube;
+    LearnOpenGL::Plane plane;
 
-    // Light properties
-    glm::vec3 lightColor(2.0f);
+    //load textures
+    LearnOpenGL::Texture2D cube_texture("../assets/textures/marble.jpg");
+    LearnOpenGL::Texture2D floor_texture("../assets/textures/metal.png");
+    LearnOpenGL::Texture2D grass_texture("../assets/textures/grass.png", true);
+    LearnOpenGL::Texture2D window_texture("../assets/textures/window.png");
+
+    // grass positions 
+    std::array<glm::vec3, 5> vegetation = {
+        glm::vec3(-1.5f, 0.25f, -0.48f),
+        glm::vec3( 1.5f, 0.25f,  0.51f),
+        glm::vec3( 0.0f, 0.25f,  0.70f),
+        glm::vec3(-0.3f, 0.25f, -2.30f),
+        glm::vec3( 0.5f, 0.25f, -0.6f),
+    };
+
+    std::array<glm::vec3, 5> windows = {
+        glm::vec3( 4.0f, 4.0f, 8.0f),
+        glm::vec3(-8.0f, 4.0f,-8.0f),
+        glm::vec3( 1.0f, 4.0f, 0.0f),
+        glm::vec3( 8.0f, 4.0f, 16.0f),
+        glm::vec3(-4.0f, 4.0f,-16.0f),
+    };
+
+    shader.Use();
+    shader.SetInt("tex", 0);
 
     // Render loop 
     while (!glfwWindowShouldClose(window))
     {
         // rendering commands 
         glEnable(GL_DEPTH_TEST);
-        glEnable(GL_STENCIL_TEST);
-        //glDepthMask(GL_FALSE)
-        //glDepthFunc(GL_EQUAL);
+        glEnable(GL_BLEND);
 
         glClearColor(0.1f, 0.1f, 0.8f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // update time delta
         dt.Step();
@@ -74,54 +95,66 @@ int main(void) {
         // input
         ProcessInput(window, dt.delta_time());
 
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
         // Scene
         // ----------------------------------------
-        // activate shader for non-light objects
-        shader.Use();
+        //camera matrice uniforms
+        shader.SetMat4("view", camera.GetViewMatrix());
+        shader.SetMat4("projection", camera.GetProjectionMatrix());
 
-        // Do not update the stencil buffer while drawing the floor
-        glStencilMask(0x00); 
+        // floor
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, floor_texture.id());
         shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -20.1f, 0.0f)), glm::vec3(40.0f)));
         cube.Draw();
 
-        glStencilFunc(GL_ALWAYS, 1, 0xFF); 
-        glStencilMask(0xFF); 
-        shader.SetVec3("viewPos", camera.GetPosition());
-        shader.SetMat4("view", camera.GetViewMatrix());
-        shader.SetMat4("projection", camera.GetProjectionMatrix());
-        
-        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 1.0f, 0.0f)), glm::vec3(2.0f)));
+        // cubes
+        glActiveTexture(GL_TEXTURE0); 
+        glBindTexture(GL_TEXTURE_2D, cube_texture.id());
+        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 0.0f)), glm::vec3(2.0f)));
         cube.Draw();
 
-        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)), glm::vec3(4.0f)));
+        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 2.0f, 0.0f)), glm::vec3(4.0f)));
         cube.Draw();
 
-        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 4.0f, 0.0f)), glm::vec3(8.0f)));
+        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 4.0f, 0.0f)), glm::vec3(8.0f)));
         cube.Draw();
 
+        // grass 
+        grass_texture.SetParameters(GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+        glActiveTexture(GL_TEXTURE0); 
+        glBindTexture(GL_TEXTURE_2D, grass_texture.id());
+        for (glm::vec3& veg : vegetation) {
+            shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), veg), glm::vec3(1.0f)));
+            plane.Draw();
+        }
 
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF); 
-        glStencilMask(0x00); 
-        glDisable(GL_DEPTH_TEST); 
-        outline_shader.Use(); 
-        outline_shader.SetVec3("viewPos", camera.GetPosition());
-        outline_shader.SetMat4("view", camera.GetViewMatrix());
-        outline_shader.SetMat4("projection", camera.GetProjectionMatrix());
+        // window
 
-        outline_shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 1.0f, 0.0f)), glm::vec3(2.4f)));
-        cube.Draw();
+        // When writing to the depth buffer, the depth test does not care if the fragment has transparency or not, 
+        // so the transparent parts are written to the depth buffer as any other value.
+        // The result is that the background windows are tested on depth as any other opaque object would be, ignoring transparency.
+        // Even though the transparent part should show the windows behind it, the depth test discards them.
 
-        outline_shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)), glm::vec3(4.4f)));
-        cube.Draw();
+        // DO NOT break the order
+        // 1. Draw all opaque objects first.
+        // 2. Sort all the transparent objects.
+        // 3. Draw all the transparent objects in sorted order.
 
-        outline_shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 4.0f, 0.0f)), glm::vec3(8.4f)));
-        cube.Draw();
-        glStencilMask(0xFF); 
-        glStencilFunc(GL_ALWAYS, 0, 0xFF);
-        glEnable(GL_DEPTH_TEST);
+        std::map<float, glm::vec3> sorted;  
+        for (glm::vec3& window : windows) {
+            float distance = glm::length(camera.GetPosition() - window); 
+            sorted[distance] = window; 
+        }
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendEquation(GL_FUNC_ADD);
+
+        glActiveTexture(GL_TEXTURE0); 
+        glBindTexture(GL_TEXTURE_2D, window_texture.id()); 
+        for (std::map<float, glm::vec3>::iterator it = sorted.end(); it != sorted.begin();) {
+            shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), (--it)->second), glm::vec3(8.0f)));
+            plane.Draw();
+        }
 
         // check and call events and swap buffers
         glfwPollEvents();
