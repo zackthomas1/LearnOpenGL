@@ -48,11 +48,9 @@ int main(void) {
 
     // create shader programs
     LearnOpenGL::Shader shader("../assets/shaders/4_1_depth_buffer.vs", "../assets/shaders/4_1_depth_buffer.fs");
+    LearnOpenGL::Shader outline_shader("../assets/shaders/4_2_stencil_outline.vs", "../assets/shaders/4_2_stencil_outline.fs");
 
     //Initialize modles
-    LearnOpenGL::Model backpack("../assets/models/backpack/backpack.obj");
-    LearnOpenGL::Model cyborg("../assets/models/cyborg/cyborg.obj");
-    LearnOpenGL::Model nanosuit("../assets/models/nanosuit/nanosuit.obj");
     LearnOpenGL::Cube cube;
 
     // Light properties
@@ -63,11 +61,12 @@ int main(void) {
     {
         // rendering commands 
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_STENCIL_TEST);
         //glDepthMask(GL_FALSE)
         //glDepthFunc(GL_EQUAL);
 
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0.1f, 0.1f, 0.8f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         // update time delta
         dt.Step();
@@ -75,34 +74,54 @@ int main(void) {
         // input
         ProcessInput(window, dt.delta_time());
 
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
         // Scene
         // ----------------------------------------
         // activate shader for non-light objects
         shader.Use();
 
+        // Do not update the stencil buffer while drawing the floor
+        glStencilMask(0x00); 
+        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -20.1f, 0.0f)), glm::vec3(40.0f)));
+        cube.Draw();
+
+        glStencilFunc(GL_ALWAYS, 1, 0xFF); 
+        glStencilMask(0xFF); 
         shader.SetVec3("viewPos", camera.GetPosition());
         shader.SetMat4("view", camera.GetViewMatrix());
         shader.SetMat4("projection", camera.GetProjectionMatrix());
         
-        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)), glm::vec3(5.0f, 0.0f, 0.0f)));
+        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 1.0f, 0.0f)), glm::vec3(2.0f)));
         cube.Draw();
 
-        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(4.0f)), glm::vec3(0.0f, 0.0f, 0.0f)));
+        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)), glm::vec3(4.0f)));
         cube.Draw();
 
-        shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(8.0f)), glm::vec3(-5.0f, 0.0f, 0.0f)));
+        shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 4.0f, 0.0f)), glm::vec3(8.0f)));
         cube.Draw();
 
-        //// backpack model
-        //float rotate = glm::radians(45.0f * ((glm::sin(dt.current_frame_time()) + 1) / 2.0f));
-        //shader.SetMat4("model", glm::rotate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), rotate, glm::vec3(0.0f, 1.0f, 0.0f)));
-        //backpack.Draw(shader);
 
-        //shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), glm::vec3(1.0f, 1.0f, 0.0f)));
-        //cyborg.Draw(shader);
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF); 
+        glStencilMask(0x00); 
+        glDisable(GL_DEPTH_TEST); 
+        outline_shader.Use(); 
+        outline_shader.SetVec3("viewPos", camera.GetPosition());
+        outline_shader.SetMat4("view", camera.GetViewMatrix());
+        outline_shader.SetMat4("projection", camera.GetProjectionMatrix());
 
-        //shader.SetMat4("model", glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)), glm::vec3(-1.0f, -1.0f, 0.0f)));
-        //nanosuit.Draw(shader);
+        outline_shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 1.0f, 0.0f)), glm::vec3(2.4f)));
+        cube.Draw();
+
+        outline_shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)), glm::vec3(4.4f)));
+        cube.Draw();
+
+        outline_shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 4.0f, 0.0f)), glm::vec3(8.4f)));
+        cube.Draw();
+        glStencilMask(0xFF); 
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glEnable(GL_DEPTH_TEST);
 
         // check and call events and swap buffers
         glfwPollEvents();
