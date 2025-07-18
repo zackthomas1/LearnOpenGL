@@ -71,7 +71,7 @@ int main(void) {
     std::array<glm::vec3, 5> windows = {
         glm::vec3( 4.0f, 4.0f, 8.0f),
         glm::vec3(-8.0f, 4.0f,-8.0f),
-        glm::vec3( 1.0f, 4.0f, 0.0f),
+        glm::vec3( 2.0f, 4.0f, 2.0f),
         glm::vec3( 8.0f, 4.0f, 16.0f),
         glm::vec3(-4.0f, 4.0f,-16.0f),
     };
@@ -97,6 +97,12 @@ int main(void) {
 
         // Scene
         // ----------------------------------------
+
+        // face culling
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        glFrontFace(GL_CCW);
+
         //camera matrice uniforms
         shader.SetMat4("view", camera.GetViewMatrix());
         shader.SetMat4("projection", camera.GetProjectionMatrix());
@@ -119,6 +125,8 @@ int main(void) {
         shader.SetMat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 4.0f, 0.0f)), glm::vec3(8.0f)));
         cube.Draw();
 
+        glDisable(GL_CULL_FACE);
+        
         // grass 
         grass_texture.SetParameters(GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
         glActiveTexture(GL_TEXTURE0); 
