@@ -46,8 +46,38 @@ int main(void) {
     if (window == nullptr)
         return -1;
 
+
+    float quadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    }; 
+
+    uint32_t quad_vao, quad_vbo; 
+    glGenVertexArrays(1, &quad_vao); 
+    glGenBuffers(1, &quad_vbo); 
+    glBindVertexArray(quad_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
     // create shader programs
     LearnOpenGL::Shader shader("../assets/shaders/4_3_blending.vs", "../assets/shaders/4_3_blending.fs");
+    LearnOpenGL::Shader framebuffer_shader("../assets/shaders/4_5_framebuffer.vs", "../assets/shaders/4_5_framebuffer.fs");
+
+    shader.Use();
+    shader.SetInt("tex", 0);
+
+    framebuffer_shader.Use(); 
+    framebuffer_shader.SetInt("screenTexture", 0);
 
     //Initialize modles
     LearnOpenGL::Cube cube;
@@ -59,6 +89,62 @@ int main(void) {
     LearnOpenGL::Texture2D grass_texture("../assets/textures/grass.png", true);
     LearnOpenGL::Texture2D window_texture("../assets/textures/window.png");
 
+    // create frame buffer
+    uint32_t fbo; 
+    glGenFramebuffers(1, &fbo); 
+
+    //It is also possible to bind a framebuffer to a read or write target specifically 
+    // by binding to GL_READ_FRAMEBUFFER or GL_DRAW_FRAMEBUFFER respectively.
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo); 
+
+    // an attachment is a memory loccation that can act as a buffer for the 
+    // framebuffer, think of it as an image.
+    // two options; texture or renderbuffer object
+
+
+    // Create a texture attachment.
+    uint32_t framebuffer_texture; 
+    glGenTextures(1, &framebuffer_texture); 
+    glBindTexture(GL_TEXTURE_2D, framebuffer_texture);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, kWidth, kHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer_texture, 0);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // create render buffer object:  can not be directly read from.
+    // store all render data directly in buffer without conversions to texture-specificc formats
+    // faster as writeable storage, but can not directly read from them
+    // often used as depth and stencil attachments
+    uint32_t rbo; 
+    glGenRenderbuffers(1, &rbo); 
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, kWidth, kHeight);
+    
+    //attach render buffer object to framebuffer
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    // the general rule is that if you never need to sample data from a specific buffer, 
+    // it is wise to use a renderbuffer object for that specific buffer.If you need to sample data 
+    // from a specific buffer like colors or depth values, you should use a texture attachment
+
+
+    //For a framebuffer to be complete the following requirements have to be satisfied :
+    // 1. We have to attach at least one buffer(color, depth or stencil buffer).
+    // 2. There should be at least one color attachment.
+    // 3. All attachments should be complete as well(reserved memory).
+    // 4. Each buffer should have the same number of samples.
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        TY_CORE_ERROR("FRAMEBUFFER: Framebuffer is not complete");
+    }
+    //Bind the defualt framebuffer for rendering operations ot have a visual impact
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+
     // grass positions 
     std::array<glm::vec3, 5> vegetation = {
         glm::vec3(-1.5f, 0.25f, -0.48f),
@@ -68,6 +154,7 @@ int main(void) {
         glm::vec3( 0.5f, 0.25f, -0.6f),
     };
 
+    //windows positions
     std::array<glm::vec3, 5> windows = {
         glm::vec3( 4.0f, 4.0f, 8.0f),
         glm::vec3(-8.0f, 4.0f,-8.0f),
@@ -76,33 +163,34 @@ int main(void) {
         glm::vec3(-4.0f, 4.0f,-16.0f),
     };
 
-    shader.Use();
-    shader.SetInt("tex", 0);
-
     // Render loop 
     while (!glfwWindowShouldClose(window))
-    {
-        // rendering commands 
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-
-        glClearColor(0.1f, 0.1f, 0.8f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    {        
         // update time delta
         dt.Step();
 
         // input
         ProcessInput(window, dt.delta_time());
 
-        // Scene
+        // FIRST PASSS
         // ----------------------------------------
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Bind ccustom framebuffer
+
+        // render commands 
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
 
         // face culling
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
         glFrontFace(GL_CCW);
 
+        glClearColor(0.1f, 0.1f, 0.8f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        shader.Use();
+        // Scene
+        // ----------------------------------------
         //camera matrice uniforms
         shader.SetMat4("view", camera.GetViewMatrix());
         shader.SetMat4("projection", camera.GetProjectionMatrix());
@@ -164,12 +252,31 @@ int main(void) {
             plane.Draw();
         }
 
+        // SECOND PASS
+        // ----------------------------------------
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);   // back to default
+        glClearColor(0.1f, 0.1f, 0.8f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT); 
+
+        framebuffer_shader.Use(); 
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, framebuffer_texture); 
+        glBindVertexArray(quad_vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
         // check and call events and swap buffers
         glfwPollEvents();
         glfwSwapBuffers(window); 
     }
+    // delete textures
+    // delete shader 
+    // delete meshes
 
-    // Terminate window
+    
+    // do not forget to delete framebuffer 
+    glDeleteFramebuffers(1, &fbo); 
+
+    // Terminate window        
     glfwTerminate(); 
     return 0;
 }
