@@ -145,6 +145,32 @@ int main(void) {
     //Bind the defualt framebuffer for rendering operations ot have a visual impact
     glBindFramebuffer(GL_FRAMEBUFFER, 0); 
 
+    // Create Cube map
+    uint32_t cubmap_id; 
+    glGenTextures(1, &cubmap_id); 
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubmap_id); 
+
+    std::array<const char*, 6> texture_faces = {
+        "../assets/skybox/back.png",
+        "../assets/skybox/bottom.png",
+        "../assets/skybox/front.png",
+        "../assets/skybox/left.png",
+        "../assets/skybox/right.png",
+        "../assets/skybox/top.png",
+    };
+    int width, height, nrChannels; 
+    unsigned char *data; 
+    for (uint32_t i = 0; i < texture_faces.size(); i++) {
+        data = stbi_load(texture_faces[i], &width, &height, &nrChannels, 0); 
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
     // grass positions 
     std::array<glm::vec3, 5> vegetation = {
         glm::vec3(-1.5f, 0.25f, -0.48f),

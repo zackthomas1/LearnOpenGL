@@ -65,7 +65,7 @@ void main()
     }
 
 
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(RGB, 1.0);
 }
 
 // kernel (or convolution matrix) is a small matrix-like array of values centered 
