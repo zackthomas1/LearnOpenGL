@@ -55,17 +55,19 @@ void main()
         -1, 0, 1
     );
 
-    vec3 sampleTex[9]; 
+    vec3 sampleTex[9];
+    // Sample the surrounding pixels
     for(int i = 0; i < 9; i++){
         sampleTex[i] = vec3(texture(screenTexture, TexCoords.st + offsets[i]).rgb);
     }
-    vec3 color = vec3(0.0); 
+    vec3 color = vec3(0.0);
+    // Apply convolution: flip the kernel indices
     for(int i = 0; i < 9; i++){
-        color += sampleTex[i] * sobel_kernel[i];
+        color += sampleTex[i] * sobel_kernel[8 - i];
     }
 
 
-    FragColor = vec4(RGB, 1.0);
+    FragColor = vec4(color, 1.0);
 }
 
 // kernel (or convolution matrix) is a small matrix-like array of values centered 
