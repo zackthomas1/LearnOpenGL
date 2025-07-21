@@ -72,5 +72,6 @@ vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir)
 
     // output
     // ------------------
-    return ambientColor + diffuseColor + specularColor;
+    // return ambientColor + diffuseColor + specularColor;
+    return vec4(texture(material.texture_diffuse1, texCoords).rgb, 1.0);
 }

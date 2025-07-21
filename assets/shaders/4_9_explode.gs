@@ -31,7 +31,9 @@ vec4 explode(vec4 position, vec3 normal){
 
 void main()
 {
-    gl_Position = explode(gl_in[0].gl_Position, gs_in[0].normal);
+    vec3 normal = GetNormal(); 
+
+    gl_Position = explode(gl_in[0].gl_Position, normal);
     fragPos     = gs_in[0].fragPos;
     normal      = gs_in[0].normal;
     texCoords   = gs_in[0].texCoords;
@@ -39,13 +41,13 @@ void main()
     // to gl_Positionis added to the output primitive.
     EmitVertex(); 
 
-    gl_Position = explode(gl_in[1].gl_Position, gs_in[1].normal);
+    gl_Position = explode(gl_in[1].gl_Position, normal);
     fragPos     = gs_in[1].fragPos;
     normal      = gs_in[1].normal;
     texCoords   = gs_in[1].texCoords;
     EmitVertex(); 
 
-    gl_Position = explode(gl_in[2].gl_Position, gs_in[2].normal);
+    gl_Position = explode(gl_in[2].gl_Position, normal);
     fragPos     = gs_in[2].fragPos;
     normal      = gs_in[2].normal;
     texCoords   = gs_in[2].texCoords;
