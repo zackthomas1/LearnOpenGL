@@ -47,39 +47,26 @@ int main(void) {
         return -1;
 
     // create shader programs
-    LearnOpenGL::Shader shader("../assets/shaders/4_9_geometry_shader.vs", 
-        "../assets/shaders/4_9_geometry_shader.fs",
-        "../assets/shaders/4_9_house.gs"
+    LearnOpenGL::Shader shader("../assets/shaders/3_model_loading.vs", 
+        "../assets/shaders/3_model_loading.fs",
+        "../assets/shaders/4_9_explode.gs"
     );
-
     shader.Use();
+    shader.SetMat4("model", glm::mat4(1.0f));
+    shader.SetVec3("dirLight.direction", glm::vec3(0.0f, 0.0f, -1.0f));
+    shader.SetVec3("dirLight.value", glm::vec3(1.0f));
+
+    //
+    int maxVaryingVectors;
+    glGetIntegerv(GL_MAX_VARYING_COMPONENTS, &maxVaryingVectors);
+    TY_CORE_INFO("Max varying components: {}", static_cast<int>(maxVaryingVectors));
 
     //Initialize models
-    float points[] = {
-        // position     // color
-        -0.5f,  0.5f,   1.0f, 0.0f, 0.0f, // top-left
-         0.5f,  0.5f,   0.0f, 1.0f, 0.0f, // top-right
-         0.5f, -0.5f,   0.0f, 0.0f, 1.0f, // bottom-right
-        -0.5f, -0.5f,   1.0f, 1.0f, 0.0f  // bottom-left
-    };
-    uint32_t vao, vbo;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points), &points, GL_STATIC_DRAW);
-    
-    // aPos
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-
-    // aColor 
-    glEnableVertexAttribArray(1); 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    LearnOpenGL::Model backpack("../assets/models/backpack/backpack.obj");
 
     //load textures
 
+    
     // Render loop 
     while (!glfwWindowShouldClose(window))
     {
@@ -88,12 +75,14 @@ int main(void) {
 
         // input
         ProcessInput(window, dt.delta_time());
-
+        glEnable(GL_DEPTH_TEST);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glBindVertexArray(vao);
-        glDrawArrays(GL_POINTS, 0, 4);
+        shader.SetMat4("view", camera.GetViewMatrix());
+        shader.SetMat4("projection", camera.GetProjectionMatrix());
+        shader.SetFloat("time", static_cast<float>(glfwGetTime()));
+        backpack.Draw(shader);
 
         // check and call events and swap buffers
         glfwPollEvents();

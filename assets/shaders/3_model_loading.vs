@@ -7,19 +7,21 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec3 fragPos; 
-out vec3 normal; 
-out vec2 texCoords; 
+out VS_OUT{
+    vec3 fragPos; 
+    vec3 normal; 
+    vec2 texCoords; 
+} vs_out;
 
 void main()
 {
 
-    fragPos = (model * vec4(aPos, 1.0)).xyz; 
+    vs_out.fragPos = (model * vec4(aPos, 1.0)).xyz; 
 
     mat3 normalMat = mat3(transpose(inverse(model))); 
-    normal = normalMat * aNormal; 
+    vs_out.normal = normalMat * aNormal; 
     
     // texture coordinates
-    texCoords = aTexCoords;
+    vs_out.texCoords = aTexCoords;
     gl_Position = projection * view * model * vec4(aPos, 1.0);
 }
