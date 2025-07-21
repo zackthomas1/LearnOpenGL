@@ -11,7 +11,7 @@ namespace LearnOpenGL
     {
     public:
         // constructor reads and builds the shader
-        Shader(const char* vertex_path, const char* fragment_path);
+        Shader(const char* vertex_path, const char* fragment_path, const char* geometry_path="");
 
         // use/activate the shader 
         void Use();
@@ -31,6 +31,7 @@ namespace LearnOpenGL
     private:
         std::string ReadSourceFile(const char* path);
         void CompileShaderProgram(const char* vertex_source, const char* fragement_source, unsigned int& shader_program);
+        void CompileShaderProgram(const char* vertex_source, const char* fragement_source, const char* geometry_source, unsigned int& shader_program);
 
     private:
         unsigned int id_;
