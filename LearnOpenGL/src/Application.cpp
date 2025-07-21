@@ -49,17 +49,18 @@ int main(void) {
     // create shader programs
     LearnOpenGL::Shader shader("../assets/shaders/4_9_geometry_shader.vs", 
         "../assets/shaders/4_9_geometry_shader.fs",
-        "../assets/shaders/4_9_geometry_shader.gs"
+        "../assets/shaders/4_9_house.gs"
     );
 
     shader.Use();
 
     //Initialize models
     float points[] = {
-        -0.5f,  0.5f, // top-left
-         0.5f,  0.5f, // top-right
-         0.5f, -0.5f, // bottom-right
-        -0.5f, -0.5f  // bottom-left
+        // position     // color
+        -0.5f,  0.5f,   1.0f, 0.0f, 0.0f, // top-left
+         0.5f,  0.5f,   0.0f, 1.0f, 0.0f, // top-right
+         0.5f, -0.5f,   0.0f, 0.0f, 1.0f, // bottom-right
+        -0.5f, -0.5f,   1.0f, 1.0f, 0.0f  // bottom-left
     };
     uint32_t vao, vbo;
     glGenVertexArrays(1, &vao);
@@ -71,7 +72,11 @@ int main(void) {
     
     // aPos
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+
+    // aColor 
+    glEnableVertexAttribArray(1); 
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 
     //load textures
 
