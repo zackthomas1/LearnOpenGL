@@ -47,12 +47,17 @@ int main(void) {
         return -1;
 
     // create shader programs
-    LearnOpenGL::Shader shader("../assets/shaders/3_model_loading.vs", 
-        "../assets/shaders/3_model_loading.fs",
-        "../assets/shaders/4_9_explode.gs"
+    LearnOpenGL::Shader shader(
+        "../assets/shaders/3_model_loading.vs", 
+        "../assets/shaders/3_model_loading.fs"
     );
+    LearnOpenGL::Shader normal_shader(
+        "../assets/shaders/4_9_vertex_normals.vs",
+        "../assets/shaders/4_9_vertex_normals.fs",
+        "../assets/shaders/4_9_vertex_normals.gs"
+    );
+
     shader.Use();
-    shader.SetMat4("model", glm::mat4(1.0f));
     shader.SetVec3("dirLight.direction", glm::vec3(0.0f, 0.0f, -1.0f));
     shader.SetVec3("dirLight.value", glm::vec3(1.0f));
 
@@ -79,10 +84,17 @@ int main(void) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        shader.Use();
+        shader.SetMat4("model", glm::mat4(1.0f));
         shader.SetMat4("view", camera.GetViewMatrix());
         shader.SetMat4("projection", camera.GetProjectionMatrix());
-        shader.SetFloat("time", static_cast<float>(glfwGetTime()));
         backpack.Draw(shader);
+
+        normal_shader.Use();
+        normal_shader.SetMat4("model", glm::mat4(1.0f));
+        normal_shader.SetMat4("view", camera.GetViewMatrix());
+        normal_shader.SetMat4("projection", camera.GetProjectionMatrix());
+        backpack.Draw(normal_shader);
 
         // check and call events and swap buffers
         glfwPollEvents();

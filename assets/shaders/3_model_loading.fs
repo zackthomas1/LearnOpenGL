@@ -28,16 +28,18 @@ vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir);
 
 uniform vec3 viewPos;
 
-in vec3 fragPos; 
-in vec3 normal; 
-in vec2 texCoords;
+in VS_OUT{
+    vec3 fragPos; 
+    vec3 normal; 
+    vec2 texCoords;
+} fs_in;
 
 out vec4 FragColor;
 
 void main()
 {
-    vec3 norm = normalize(normal); 
-    vec3 viewDir = normalize(fragPos - viewPos);
+    vec3 norm = normalize(fs_in.normal); 
+    vec3 viewDir = normalize(fs_in.fragPos - viewPos);
 
     // output
     // ----------
@@ -54,12 +56,12 @@ vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir)
     
     // ambient color
     // ------------------
-    vec3 ambientColor = texture(material.texture_diffuse1, texCoords).rgb * (light.value * AMBIENT_INFLUENCE);
+    vec3 ambientColor = texture(material.texture_diffuse1, fs_in.texCoords).rgb * (light.value * AMBIENT_INFLUENCE);
     
     // diffuse color
     // ------------------
     float cosineTerm = max(dot(normal, lightDir), 0.0);
-    vec3 diffuseColor = texture(material.texture_diffuse1, texCoords).rgb * cosineTerm * (light.value * DIFFUSE_INFLUENCE);
+    vec3 diffuseColor = texture(material.texture_diffuse1, fs_in.texCoords).rgb * cosineTerm * (light.value * DIFFUSE_INFLUENCE);
     
     // specular color
     // ------------------
@@ -68,10 +70,9 @@ vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir)
     // Note: Calculate the angular distance between this reflection vector and the view direction.
     // The closer the angle between them, the greater the impact of the specular light.
     float specularIntensity = pow(max(dot(reflectDir, viewDir), 0.0), 32.0);
-    vec3 specularColor = texture(material.texture_specular1, texCoords).rgb * specularIntensity * (light.value * SPECULAR_INFLUENCE);
+    vec3 specularColor = texture(material.texture_specular1, fs_in.texCoords).rgb * specularIntensity * (light.value * SPECULAR_INFLUENCE);
 
     // output
     // ------------------
-    // return ambientColor + diffuseColor + specularColor;
-    return vec4(texture(material.texture_diffuse1, texCoords).rgb, 1.0);
+    return ambientColor + diffuseColor + specularColor;
 }
