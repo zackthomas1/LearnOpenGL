@@ -47,78 +47,105 @@ int main(void) {
         return -1;
 
     //Initialize models
-    float quadVertices[] = {
-        // positions     // colors
-        -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
-         0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
-        -0.05f, -0.05f,  0.0f, 0.0f, 1.0f,
+    LearnOpenGL::Model planet("../assets/models/planet/planet.obj");
 
-        -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
-         0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
-         0.05f,  0.05f,  0.0f, 1.0f, 1.0f
-    };
-    uint32_t vao, vbo;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
 
-    // create Vertex Buffer Object (VBO)
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    uint32_t planet_vbo;
+    glGenBuffers(1, &planet_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, planet_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4), glm::value_ptr(model), GL_STATIC_DRAW);
 
-    // aPos
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    
-    // color
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    for (uint32_t i = 0; i < planet.meshes.size(); i++) {
+        uint32_t vao = planet.meshes[i].VOA_;
+        glBindVertexArray(vao);
 
-    // define translation offsets
-    glm::vec2 translations[100];
-    int index = 0;
-    float offset = 0.1f;
-    for (int y = -10; y < 10; y += 2)
-    {
-        for (int x = -10; x < 10; x += 2)
-        {
-            glm::vec2 translation;
-            translation.x = (float)x / 10.0f + offset;
-            translation.y = (float)y / 10.0f + offset;
-            translations[index++] = translation;
-        }
+        // vertex attributes        
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(1 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+
+        glBindVertexArray(0);
     }
-    uint32_t offset_vbo;
-    glGenBuffers(1, &offset_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, offset_vbo); 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 100, &translations[0], GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glEnableVertexAttribArray(2); 
-    glBindBuffer(GL_ARRAY_BUFFER, offset_vbo); 
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    
-    // Tells OpenGL when to update the content of a vertex attribute to the next element.
-    // Its first parameter is the vertex attribute in question and the second parameter the attribute divisor.
-    // By default, the attribute divisor is 0 which tells OpenGL to update 
-    // the content of the vertex attribute each iteration of the vertex shader.
-    // By setting this attribute to 1 we're telling OpenGL that we want to update the content 
-    // of the vertex attribute when we start to render a new instance.
-    //By setting the attribute divisor to 1 we're effectively telling OpenGL that the vertex attribute 
-    // at attribute location 2 is an instanced array.
-    glVertexAttribDivisor(2,1);
+
+    LearnOpenGL::Model asteroid("../assets/models/rock/rock.obj", false);
+    uint32_t amount = 2500;
+    std::vector<glm::mat4> modelMatrices; 
+    modelMatrices.reserve(amount);
+    srand(static_cast<unsigned int>(glfwGetTime()));
+    float radius = 25.0f;
+    float offset = 5.5f; 
+    for (uint32_t i = 0; i < amount; i++) {
+        glm::mat4 model = glm::mat4(1.0f); 
+        
+        // 1. translate: displace along circle with 'radius' in range [-offset, offset]
+        float angle = (float)i / (float)amount * 360.f;
+        float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset; 
+        float x = sin(angle) * radius + displacement;
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float y = displacement * 0.4f;
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float z = cos(angle) * radius + displacement;
+        model = glm::translate(model, glm::vec3(x,y,z));
+
+        // 2. scale: scale between 0.05 and 0.25
+        float scale = (rand() % 20) / 100.0f + 0.05; 
+        model = glm::scale(model, glm::vec3(scale)); 
+        
+        // 3. rotation: add random rotation around 
+        float rotAngle = (rand() % 360); 
+        model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+        
+        // 4. add to list of matrices 
+        modelMatrices.push_back(model);
+    }
+
+    uint32_t asteroid_vbo;
+    glGenBuffers(1, &asteroid_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, asteroid_vbo);
+    // To pass an std::vector to glBufferData, you can use the data() method of the vector, which provides a pointer to the underlying array.  
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * modelMatrices.size(), modelMatrices.data(), GL_STATIC_DRAW);
+
+    for (uint32_t i = 0; i < asteroid.meshes.size(); i++) {
+        uint32_t vao = asteroid.meshes[i].VOA_; 
+        glBindVertexArray(vao);
+
+        // vertex attributes        
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(1 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+
+        glBindVertexArray(0);
+    }
 
     // create shader programs
     LearnOpenGL::Shader shader(
         "../assets/shaders/4_10_instancing.vs",
         "../assets/shaders/4_10_instancing.fs"
     );
-    shader.Use();
-    for (unsigned int i = 0; i < 100; i++)
-    {
-        shader.SetVec2("offsets[" + std::to_string(i) + "]", translations[i]);
-    }
 
     //load textures
 
@@ -136,9 +163,22 @@ int main(void) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.Use();
+        shader.SetMat4("view",          camera.GetViewMatrix());
+        shader.SetMat4("perspective",   camera.GetProjectionMatrix());
         
-        glBindVertexArray(vao);
-        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
+        planet.Draw(shader);
+  
+        shader.SetInt("texture_diffuse1", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, asteroid.textures_loaded[0].id);
+        for (uint32_t i = 0; i < asteroid.meshes.size(); i++)
+        {
+            glBindVertexArray(asteroid.meshes[i].VOA_); 
+            glDrawElementsInstanced(
+                GL_TRIANGLES, asteroid.meshes[i].m_indices.size(), GL_UNSIGNED_INT, 0, amount
+            );
+            glBindVertexArray(0);
+        }
 
         // check and call events and swap buffers
         glfwPollEvents();
