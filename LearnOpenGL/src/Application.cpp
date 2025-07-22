@@ -46,28 +46,79 @@ int main(void) {
     if (window == nullptr)
         return -1;
 
+    //Initialize models
+    float quadVertices[] = {
+        // positions     // colors
+        -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
+         0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
+        -0.05f, -0.05f,  0.0f, 0.0f, 1.0f,
+
+        -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
+         0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
+         0.05f,  0.05f,  0.0f, 1.0f, 1.0f
+    };
+    uint32_t vao, vbo;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    // create Vertex Buffer Object (VBO)
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+    // aPos
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    
+    // color
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    // define translation offsets
+    glm::vec2 translations[100];
+    int index = 0;
+    float offset = 0.1f;
+    for (int y = -10; y < 10; y += 2)
+    {
+        for (int x = -10; x < 10; x += 2)
+        {
+            glm::vec2 translation;
+            translation.x = (float)x / 10.0f + offset;
+            translation.y = (float)y / 10.0f + offset;
+            translations[index++] = translation;
+        }
+    }
+    uint32_t offset_vbo;
+    glGenBuffers(1, &offset_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, offset_vbo); 
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 100, &translations[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glEnableVertexAttribArray(2); 
+    glBindBuffer(GL_ARRAY_BUFFER, offset_vbo); 
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    
+    // Tells OpenGL when to update the content of a vertex attribute to the next element.
+    // Its first parameter is the vertex attribute in question and the second parameter the attribute divisor.
+    // By default, the attribute divisor is 0 which tells OpenGL to update 
+    // the content of the vertex attribute each iteration of the vertex shader.
+    // By setting this attribute to 1 we're telling OpenGL that we want to update the content 
+    // of the vertex attribute when we start to render a new instance.
+    //By setting the attribute divisor to 1 we're effectively telling OpenGL that the vertex attribute 
+    // at attribute location 2 is an instanced array.
+    glVertexAttribDivisor(2,1);
+
     // create shader programs
     LearnOpenGL::Shader shader(
-        "../assets/shaders/3_model_loading.vs", 
-        "../assets/shaders/3_model_loading.fs"
+        "../assets/shaders/4_10_instancing.vs",
+        "../assets/shaders/4_10_instancing.fs"
     );
-    LearnOpenGL::Shader normal_shader(
-        "../assets/shaders/4_9_vertex_normals.vs",
-        "../assets/shaders/4_9_vertex_normals.fs",
-        "../assets/shaders/4_9_vertex_normals.gs"
-    );
-
     shader.Use();
-    shader.SetVec3("dirLight.direction", glm::vec3(0.0f, 0.0f, -1.0f));
-    shader.SetVec3("dirLight.value", glm::vec3(1.0f));
-
-    //
-    int maxVaryingVectors;
-    glGetIntegerv(GL_MAX_VARYING_COMPONENTS, &maxVaryingVectors);
-    TY_CORE_INFO("Max varying components: {}", static_cast<int>(maxVaryingVectors));
-
-    //Initialize models
-    LearnOpenGL::Model backpack("../assets/models/backpack/backpack.obj");
+    for (unsigned int i = 0; i < 100; i++)
+    {
+        shader.SetVec2("offsets[" + std::to_string(i) + "]", translations[i]);
+    }
 
     //load textures
 
@@ -85,16 +136,9 @@ int main(void) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.Use();
-        shader.SetMat4("model", glm::mat4(1.0f));
-        shader.SetMat4("view", camera.GetViewMatrix());
-        shader.SetMat4("projection", camera.GetProjectionMatrix());
-        backpack.Draw(shader);
-
-        normal_shader.Use();
-        normal_shader.SetMat4("model", glm::mat4(1.0f));
-        normal_shader.SetMat4("view", camera.GetViewMatrix());
-        normal_shader.SetMat4("projection", camera.GetProjectionMatrix());
-        backpack.Draw(normal_shader);
+        
+        glBindVertexArray(vao);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
 
         // check and call events and swap buffers
         glfwPollEvents();

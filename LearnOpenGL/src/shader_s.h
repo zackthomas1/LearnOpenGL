@@ -23,6 +23,7 @@ namespace LearnOpenGL
         void SetInt(const std::string& name, int value) const;
         void SetFloat(const std::string& name, float value) const;
         void SetVec2(const std::string& name, float v0, float v1) const;
+        void SetVec2(const std::string& name, glm::vec2 value) const;
         void SetVec3(const std::string& name, float v1, float v2, float v3) const;
         void SetVec3(const std::string& name, glm::vec3 v1) const;
         void SetVec4(const std::string& name, float v1, float v2, float v3, float v4) const;
