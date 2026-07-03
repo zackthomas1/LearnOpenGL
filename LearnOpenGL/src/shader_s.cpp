@@ -5,14 +5,19 @@
 
 namespace LearnOpenGL
 {
-    Shader::Shader(const char* vertex_path, const char* fragment_path)
+    Shader::Shader(const char* vertex_path, const char* fragment_path, const char* geometry_path)
     {
         // read shader from file
-        std::string vertex_shader_code = ReadSourceFile(vertex_path);
-        std::string fragment_shader_code = ReadSourceFile(fragment_path);
-
-        // compile the shaders
-        CompileShaderProgram(vertex_shader_code.c_str(), fragment_shader_code.c_str(), id_);
+        std::string vertex_shader_code      = ReadSourceFile(vertex_path);
+        std::string fragment_shader_code    = ReadSourceFile(fragment_path);
+        if (geometry_path != "") {
+            std::string geometry_shader_code = ReadSourceFile(geometry_path);
+            CompileShaderProgram(vertex_shader_code.c_str(), fragment_shader_code.c_str(), geometry_shader_code.c_str(), id_);
+        }
+        else {
+            // compile the shaders
+            CompileShaderProgram(vertex_shader_code.c_str(), fragment_shader_code.c_str(), id_);
+        }
     }
 
     void Shader::Use()
@@ -90,7 +95,6 @@ namespace LearnOpenGL
         return source_code;
     }
 
-
     void Shader::CompileShaderProgram(const char* vertex_source, const char* fragement_source, unsigned int& shader_program)
     {
         int success;
@@ -140,4 +144,69 @@ namespace LearnOpenGL
         glDeleteShader(vertex_shader);
         glDeleteShader(fragment_shader);
     }
+
+    void Shader::CompileShaderProgram(const char* vertex_source, const char* fragement_source, const char* geometry_source, unsigned int& shader_program)
+    {
+        int success;
+        char info_log[512];
+
+        // compile vertex shader
+        unsigned int vertex_shader;
+        vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertex_shader, 1, &vertex_source, NULL);
+        glCompileShader(vertex_shader);
+
+        glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
+        if (!success)
+        {
+            glGetShaderInfoLog(vertex_shader, 512, NULL, info_log);
+            TY_CORE_ERROR("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n{}", info_log);
+        }
+
+        // compile geometry shader
+        uint32_t geometry_shader;
+        geometry_shader = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(geometry_shader, 1, &geometry_source, NULL);
+        glCompileShader(geometry_shader);
+
+        glGetShaderiv(geometry_shader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(geometry_shader, 512, NULL, info_log);
+            TY_CORE_ERROR("ERROR::SHADER::GEOMETRY::COMILIATION_FAILED\n{}", info_log);
+        }
+
+        // compile fragment shader
+        unsigned int fragment_shader;
+        fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragment_shader, 1, &fragement_source, NULL);
+        glCompileShader(fragment_shader);
+
+        glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
+        if (!success)
+        {
+            glGetShaderInfoLog(fragment_shader, 512, NULL, info_log);
+            TY_CORE_ERROR("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n{}", info_log);
+        }
+
+        // Create shader program
+        shader_program = glCreateProgram();
+
+        glAttachShader(shader_program, vertex_shader);
+        glAttachShader(shader_program, geometry_shader);
+        glAttachShader(shader_program, fragment_shader);
+        glLinkProgram(shader_program);
+
+        glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+        if (!success) {
+            glGetProgramInfoLog(shader_program, 512, NULL, info_log);
+            TY_CORE_ERROR("ERROR::SHADERPROGRAM::COMPILIATION_FAILED\n{}", info_log);
+        }
+
+        // Clean-up. Delete shaders. 
+        // They are linked into our program now and no longer necessary.
+        glDeleteShader(vertex_shader);
+        glDeleteShader(geometry_shader);
+        glDeleteShader(fragment_shader);
+    }
+
 }
