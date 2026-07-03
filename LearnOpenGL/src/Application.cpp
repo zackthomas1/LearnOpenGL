@@ -28,7 +28,7 @@ static void cursor_position_callback(GLFWwindow* window, double xpos,
                                      double ypos);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLFWwindow* CreateGLFWWindow();
-unsigned int loadTexture(const char* path);
+unsigned int loadTexture(char const* path, bool gammaCorrection);
 
 // Declare window size constants
 const unsigned int kWidth = 800;
@@ -38,6 +38,7 @@ const unsigned int kHeight = 600;
 float last_x = (float)kWidth / 2.0f, last_y = (float)kHeight / 2.0f;
 bool first_mouse = true;
 bool is_blinn = false;
+bool is_gamma = false;
 
 LearnOpenGL::FlyCamera camera;
 LearnOpenGL::DeltaTime& dt = LearnOpenGL::DeltaTime::getInstance();
@@ -79,12 +80,13 @@ int main(void) {
 
     // create shader programs
     LearnOpenGL::Shader shader(
-        "../assets/shaders/5_1_blinn_phong.vs",
-        "../assets/shaders/5_1_blinn_phong.fs"
+        "../assets/shaders/5_2_gamma.vs",
+        "../assets/shaders/5_2_gamma.fs"
     );
 
     //load textures
-    uint32_t floorTexture = loadTexture("../assets/textures/wood.png");
+    uint32_t floorTexture = loadTexture("../assets/textures/wood.png", false);
+    uint32_t floorTexture_gamma_correct = loadTexture("../assets/textures/wood.png", true);
 
     shader.Use();
     shader.SetInt("floorTexture", 0);
@@ -114,11 +116,12 @@ int main(void) {
         shader.SetMat4("view",          camera.GetViewMatrix());
         shader.SetMat4("projection",    camera.GetProjectionMatrix());
         shader.SetInt("isBlinn", is_blinn);
+        shader.SetInt("isGamma", is_gamma);
         
         // draw floor
         glBindVertexArray(vao); 
         glActiveTexture(GL_TEXTURE0); 
-        glBindTexture(GL_TEXTURE_2D, floorTexture); 
+        glBindTexture(GL_TEXTURE_2D, is_gamma ? floorTexture_gamma_correct : floorTexture); 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // check and call events and swap buffers
@@ -162,6 +165,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == static_cast<int>(GLFW_KEY_B) && action == static_cast<int>(GLFW_PRESS)) {
         is_blinn = !is_blinn;
         is_blinn ? TY_CORE_INFO("Blinn-Phong") : TY_CORE_INFO("Phong");
+    }
+    if (key == static_cast<int>(GLFW_KEY_G) && action == static_cast<int>(GLFW_PRESS)) {
+        is_gamma = !is_gamma;
+        is_gamma ? TY_CORE_INFO("gamma correction: ON") : TY_CORE_INFO("gamma correction: OFF");
     }
 }
 
@@ -238,7 +245,7 @@ GLFWwindow* CreateGLFWWindow() {
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
-unsigned int loadTexture(char const* path)
+unsigned int loadTexture(char const* path, bool gammaCorrection)
 {
     unsigned int textureID;
     glGenTextures(1, &textureID);
@@ -247,20 +254,29 @@ unsigned int loadTexture(char const* path)
     unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
     {
-        GLenum format;
+        GLenum internalFormat;
+        GLenum dataFormat;
         if (nrComponents == 1)
-            format = GL_RED;
+        {
+            internalFormat = dataFormat = GL_RED;
+        }
         else if (nrComponents == 3)
-            format = GL_RGB;
+        {
+            internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
+            dataFormat = GL_RGB;
+        }
         else if (nrComponents == 4)
-            format = GL_RGBA;
+        {
+            internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
+            dataFormat = GL_RGBA;
+        }
 
         glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
