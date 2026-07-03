@@ -48,22 +48,106 @@ int main(void) {
   GLFWwindow* window = CreateGLFWWindow();
   if (window == nullptr) return -1;
 
-    // create shader programs
-    LearnOpenGL::Shader skybox_shader("../assets/shaders/4_6_skybox.vs", "../assets/shaders/4_6_skybox.fs");
-    LearnOpenGL::Shader shader("../assets/shaders/4_6_reflection_map.vs", "../assets/shaders/4_6_reflection_map.fs");
-    LearnOpenGL::Shader framebuffer_shader("../assets/shaders/4_5_framebuffer.vs", "../assets/shaders/4_5_framebuffer.fs");
-
-    shader.Use();
-    shader.SetVec3("dirLight.direction", glm::vec3(0.0f, 0.0f, -1.0f));
-    shader.SetVec3("dirLight.value", glm::vec3(1.0f));
-
-    //
-    int maxVaryingVectors;
-    glGetIntegerv(GL_MAX_VARYING_COMPONENTS, &maxVaryingVectors);
-    TY_CORE_INFO("Max varying components: {}", static_cast<int>(maxVaryingVectors));
-
     //Initialize models
-    LearnOpenGL::Model backpack("../assets/models/backpack/backpack.obj");
+    LearnOpenGL::Model planet("../assets/models/planet/planet.obj");
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
+
+    uint32_t planet_vbo;
+    glGenBuffers(1, &planet_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, planet_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4), glm::value_ptr(model), GL_STATIC_DRAW);
+
+    for (uint32_t i = 0; i < planet.meshes.size(); i++) {
+        uint32_t vao = planet.meshes[i].VOA_;
+        glBindVertexArray(vao);
+
+        // vertex attributes        
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(1 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+
+        glBindVertexArray(0);
+    }
+
+
+    LearnOpenGL::Model asteroid("../assets/models/rock/rock.obj", false);
+    uint32_t amount = 2500;
+    std::vector<glm::mat4> modelMatrices; 
+    modelMatrices.reserve(amount);
+    srand(static_cast<unsigned int>(glfwGetTime()));
+    float radius = 25.0f;
+    float offset = 5.5f; 
+    for (uint32_t i = 0; i < amount; i++) {
+        glm::mat4 model = glm::mat4(1.0f); 
+        
+        // 1. translate: displace along circle with 'radius' in range [-offset, offset]
+        float angle = (float)i / (float)amount * 360.f;
+        float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset; 
+        float x = sin(angle) * radius + displacement;
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float y = displacement * 0.4f;
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float z = cos(angle) * radius + displacement;
+        model = glm::translate(model, glm::vec3(x,y,z));
+
+        // 2. scale: scale between 0.05 and 0.25
+        float scale = (rand() % 20) / 100.0f + 0.05; 
+        model = glm::scale(model, glm::vec3(scale)); 
+        
+        // 3. rotation: add random rotation around 
+        float rotAngle = (rand() % 360); 
+        model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+        
+        // 4. add to list of matrices 
+        modelMatrices.push_back(model);
+    }
+
+    uint32_t asteroid_vbo;
+    glGenBuffers(1, &asteroid_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, asteroid_vbo);
+    // To pass an std::vector to glBufferData, you can use the data() method of the vector, which provides a pointer to the underlying array.  
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * modelMatrices.size(), modelMatrices.data(), GL_STATIC_DRAW);
+
+    for (uint32_t i = 0; i < asteroid.meshes.size(); i++) {
+        uint32_t vao = asteroid.meshes[i].VOA_; 
+        glBindVertexArray(vao);
+
+        // vertex attributes        
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(1 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+
+        glBindVertexArray(0);
+    }
+
+    // create shader programs
+    LearnOpenGL::Shader shader(
+        "../assets/shaders/4_10_instancing.vs",
+        "../assets/shaders/4_10_instancing.fs"
+    );
 
     //load textures
 
@@ -81,16 +165,22 @@ int main(void) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.Use();
-        shader.SetMat4("model", glm::mat4(1.0f));
-        shader.SetMat4("view", camera.GetViewMatrix());
-        shader.SetMat4("projection", camera.GetProjectionMatrix());
-        backpack.Draw(shader);
-
-        normal_shader.Use();
-        normal_shader.SetMat4("model", glm::mat4(1.0f));
-        normal_shader.SetMat4("view", camera.GetViewMatrix());
-        normal_shader.SetMat4("projection", camera.GetProjectionMatrix());
-        backpack.Draw(normal_shader);
+        shader.SetMat4("view",          camera.GetViewMatrix());
+        shader.SetMat4("perspective",   camera.GetProjectionMatrix());
+        
+        planet.Draw(shader);
+  
+        shader.SetInt("texture_diffuse1", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, asteroid.textures_loaded[0].id);
+        for (uint32_t i = 0; i < asteroid.meshes.size(); i++)
+        {
+            glBindVertexArray(asteroid.meshes[i].VOA_); 
+            glDrawElementsInstanced(
+                GL_TRIANGLES, asteroid.meshes[i].m_indices.size(), GL_UNSIGNED_INT, 0, amount
+            );
+            glBindVertexArray(0);
+        }
 
         // check and call events and swap buffers
         glfwPollEvents();

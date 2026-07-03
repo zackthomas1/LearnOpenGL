@@ -15,10 +15,10 @@ namespace LearnOpenGL
         Model( char *path, bool flip_vertically=true, bool gamma=false);
         void Draw(Shader &shader);
 
-    private:
-        // Model data 
         std::vector<Mesh> meshes;
         std::vector<Texture> textures_loaded;
+    private:
+        // Model data 
         std::string directory; 
         bool flip_vertically_, gamma_;
 

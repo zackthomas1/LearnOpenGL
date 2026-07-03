@@ -43,6 +43,11 @@ namespace LearnOpenGL
         glUniform2f(glGetUniformLocation(id_, name.c_str()), v0, v1);
     }
 
+    void Shader::SetVec2(const std::string& name, glm::vec2 value) const
+    {
+        glUniform2f(glGetUniformLocation(id_, name.c_str()), value.x, value.y);
+    }
+
     void Shader::SetVec3(const std::string& name, float v1, float v2, float v3) const
     {
         glUniform3f(glGetUniformLocation(id_, name.c_str()), v1, v2, v3);

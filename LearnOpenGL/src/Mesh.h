@@ -33,9 +33,8 @@ namespace LearnOpenGL
         std::vector<Vertex>         m_vertices; 
         std::vector<unsigned int>   m_indices; 
         std::vector<Texture>        m_textures;
+        unsigned int VOA_, VBO_, EBO_;
     private:
-        unsigned int VOA_, VBO_, EBO_; 
-
         void setupMesh();
     };
 }
