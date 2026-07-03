@@ -28,14 +28,16 @@ static void cursor_position_callback(GLFWwindow* window, double xpos,
                                      double ypos);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLFWwindow* CreateGLFWWindow();
+unsigned int loadTexture(const char* path);
 
 // Declare window size constants
 const unsigned int kWidth = 800;
 const unsigned int kHeight = 600;
 
-//
+// app global parameters
 float last_x = (float)kWidth / 2.0f, last_y = (float)kHeight / 2.0f;
 bool first_mouse = true;
+bool is_blinn = false;
 
 LearnOpenGL::FlyCamera camera;
 LearnOpenGL::DeltaTime& dt = LearnOpenGL::DeltaTime::getInstance();
@@ -51,17 +53,49 @@ int main(void) {
         return -1;
 
     //Initialize models
-    LearnOpenGL::Cube cube; 
+    float planeVertices[] = {
+        // positions            // normals         // texcoords
+         10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
+        -10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+        -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+
+         10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
+        -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+         10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,  10.0f, 10.0f
+    };
+    uint32_t vao, vbo; 
+    glGenVertexArrays(1, &vao); 
+    glGenBuffers(1, &vbo); 
+    glBindVertexArray(vao); 
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW); 
+    glEnableVertexAttribArray(0); 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glBindVertexArray(0);
 
     // create shader programs
     LearnOpenGL::Shader shader(
-        "../assets/shaders/4_11_anti_aliasing.vs",
-        "../assets/shaders/4_11_anti_aliasing.fs"
+        "../assets/shaders/5_1_blinn_phong.vs",
+        "../assets/shaders/5_1_blinn_phong.fs"
     );
 
     //load textures
+    uint32_t floorTexture = loadTexture("../assets/textures/wood.png");
 
-    
+    shader.Use();
+    shader.SetInt("floorTexture", 0);
+
+    // lighting info
+    // -------------
+    glm::vec3 lightPos(0.0f, 0.25f, 0.0f);
+
+    shader.Use(); 
+    shader.SetVec3("lightPos", lightPos);
+
     // Render loop 
     while (!glfwWindowShouldClose(window))
     {
@@ -79,9 +113,13 @@ int main(void) {
         shader.Use();
         shader.SetMat4("view",          camera.GetViewMatrix());
         shader.SetMat4("projection",    camera.GetProjectionMatrix());
+        shader.SetInt("isBlinn", is_blinn);
         
-        shader.SetMat4("model", glm::mat4(1.0f));
-        cube.Draw();
+        // draw floor
+        glBindVertexArray(vao); 
+        glActiveTexture(GL_TEXTURE0); 
+        glBindTexture(GL_TEXTURE_2D, floorTexture); 
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // check and call events and swap buffers
         glfwPollEvents();
@@ -119,8 +157,13 @@ void ProcessInput(GLFWwindow* window, float time_step) {
   }
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action,
-                  int mods) {}
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == static_cast<int>(GLFW_KEY_B) && action == static_cast<int>(GLFW_PRESS)) {
+        is_blinn = !is_blinn;
+        is_blinn ? TY_CORE_INFO("Blinn-Phong") : TY_CORE_INFO("Phong");
+    }
+}
 
 static void cursor_position_callback(GLFWwindow* window, double xpos,
                                      double ypos) {
@@ -191,4 +234,43 @@ GLFWwindow* CreateGLFWWindow() {
   glViewport(0, 0, kWidth, kHeight);
 
   return window;
+}
+
+// utility function for loading a 2D texture from file
+// ---------------------------------------------------
+unsigned int loadTexture(char const* path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
