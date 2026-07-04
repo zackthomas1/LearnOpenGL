@@ -63,6 +63,10 @@ namespace LearnOpenGL
         glUniform4f(glGetUniformLocation(id_, name.c_str()), v1, v2, v3, v4);
     }
 
+    void Shader::SetVec4(const std::string& name, glm::vec4 v1) const {
+      glUniform4f(glGetUniformLocation(id_, name.c_str()), v1.x, v1.y, v1.z, v1.w);
+    }
+
     void Shader::SetMat4(const std::string& name, glm::mat4 value)
     {
         glUniformMatrix4fv(glGetUniformLocation(id_, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));

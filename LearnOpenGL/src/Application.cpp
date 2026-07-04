@@ -1,5 +1,4 @@
 #include "pch.h"
-
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
@@ -47,91 +46,109 @@ int main(void) {
   LearnOpenGL::Log::Init();
   TY_CORE_INFO("Initialize Logging");
 
-    // Create window
-    glfwWindowHint(GLFW_SAMPLES, 4);
-    GLFWwindow* window = CreateGLFWWindow();
-    if (window == nullptr)
-        return -1;
+  // Create window
+  glfwWindowHint(GLFW_SAMPLES, 4);
+  GLFWwindow* window = CreateGLFWWindow();
+  if (window == nullptr) return -1;
 
-    //Initialize models
-    float planeVertices[] = {
-        // positions            // normals         // texcoords
-         10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
-        -10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
-        -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+  // Initialize models
+  float planeVertices[] = {
+      // positions            // normals         // texcoords
+      10.0f,  -0.5f, 10.0f,  0.0f, 1.0f, 0.0f, 10.0f, 0.0f,
+      -10.0f, -0.5f, 10.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f,
+      -10.0f, -0.5f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f,  10.0f,
 
-         10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
-        -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
-         10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,  10.0f, 10.0f
-    };
-    uint32_t vao, vbo; 
-    glGenVertexArrays(1, &vao); 
-    glGenBuffers(1, &vbo); 
-    glBindVertexArray(vao); 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW); 
-    glEnableVertexAttribArray(0); 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glBindVertexArray(0);
+      10.0f,  -0.5f, 10.0f,  0.0f, 1.0f, 0.0f, 10.0f, 0.0f,
+      -10.0f, -0.5f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f,  10.0f,
+      10.0f,  -0.5f, -10.0f, 0.0f, 1.0f, 0.0f, 10.0f, 10.0f};
+  uint32_t vao, vbo;
+  glGenVertexArrays(1, &vao);
+  glGenBuffers(1, &vbo);
+  glBindVertexArray(vao);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices,
+               GL_STATIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        (void*)(6 * sizeof(float)));
+  glBindVertexArray(0);
 
-    // create shader programs
-    LearnOpenGL::Shader shader(
-        "../assets/shaders/5_2_gamma.vs",
-        "../assets/shaders/5_2_gamma.fs"
-    );
+  LearnOpenGL::Cube cube;
 
-    //load textures
-    uint32_t floorTexture = loadTexture("../assets/textures/wood.png", false);
-    uint32_t floorTexture_gamma_correct = loadTexture("../assets/textures/wood.png", true);
+  // create shader programs
+  LearnOpenGL::Shader shader("../assets/shaders/5_3_shadow_map.vs",
+                             "../assets/shaders/5_3_shadow_map.fs");
+
+  // load textures
+  uint32_t floorTexture = loadTexture("../assets/textures/wood.png", false);
+  uint32_t floorTexture_gamma_correct =
+      loadTexture("../assets/textures/wood.png", true);
+
+  shader.Use();
+  shader.SetInt("floorTexture", 0);
+
+  // lighting info
+  // -------------
+  glm::vec3 lightPos(0.0f, 4.0f, 0.0f);
+  glm::vec3 lightColor(2.0f);
+
+  shader.Use();
+  shader.SetVec3("lightPos", lightPos);
+  shader.SetVec3("lightColor", lightColor);
+
+  // Render loop
+  while (!glfwWindowShouldClose(window)) {
+    // update time delta
+    dt.Step();
+
+    // input
+    ProcessInput(window, dt.delta_time());
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     shader.Use();
-    shader.SetInt("floorTexture", 0);
+    shader.SetMat4("view", camera.GetViewMatrix());
+    shader.SetMat4("projection", camera.GetProjectionMatrix());
+    shader.SetInt("isBlinn", is_blinn);
+    shader.SetInt("isGamma", is_gamma);
 
-    // lighting info
-    // -------------
-    glm::vec3 lightPos(0.0f, 0.25f, 0.0f);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,
+                  is_gamma ? floorTexture_gamma_correct : floorTexture);
+    
+    shader.SetVec4("translate", glm::vec4(0.0f, 2.0f, 2.0f, 0.0f));
+    cube.Draw();
 
-    shader.Use(); 
-    shader.SetVec3("lightPos", lightPos);
+    shader.SetVec4("translate", glm::vec4(2.0f, 2.0f, 0.0f, 0.0f));
+    cube.Draw();
 
-    // Render loop 
-    while (!glfwWindowShouldClose(window))
-    {
-        // update time delta
-        dt.Step();
+    shader.SetVec4("translate", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+    cube.Draw();
 
-        // input
-        ProcessInput(window, dt.delta_time());
-        
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_MULTISAMPLE);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // draw floor
+    shader.SetVec4("translate", glm::vec4(0.0f));
+    glBindVertexArray(vao);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,
+                  is_gamma ? floorTexture_gamma_correct : floorTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        shader.Use();
-        shader.SetMat4("view",          camera.GetViewMatrix());
-        shader.SetMat4("projection",    camera.GetProjectionMatrix());
-        shader.SetInt("isBlinn", is_blinn);
-        shader.SetInt("isGamma", is_gamma);
-        
-        // draw floor
-        glBindVertexArray(vao); 
-        glActiveTexture(GL_TEXTURE0); 
-        glBindTexture(GL_TEXTURE_2D, is_gamma ? floorTexture_gamma_correct : floorTexture); 
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+    // check and call events and swap buffers
+    glfwPollEvents();
+    glfwSwapBuffers(window);
+  }
 
-        // check and call events and swap buffers
-        glfwPollEvents();
-        glfwSwapBuffers(window);
-    }
-
-    // Terminate window
-    glfwTerminate(); 
-    return 0;
+  // Terminate window
+  glfwTerminate();
+  return 0;
 }
 
 void ProcessInput(GLFWwindow* window, float time_step) {
@@ -160,16 +177,19 @@ void ProcessInput(GLFWwindow* window, float time_step) {
   }
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == static_cast<int>(GLFW_KEY_B) && action == static_cast<int>(GLFW_PRESS)) {
-        is_blinn = !is_blinn;
-        is_blinn ? TY_CORE_INFO("Blinn-Phong") : TY_CORE_INFO("Phong");
-    }
-    if (key == static_cast<int>(GLFW_KEY_G) && action == static_cast<int>(GLFW_PRESS)) {
-        is_gamma = !is_gamma;
-        is_gamma ? TY_CORE_INFO("gamma correction: ON") : TY_CORE_INFO("gamma correction: OFF");
-    }
+void key_callback(GLFWwindow* window, int key, int scancode, int action,
+                  int mods) {
+  if (key == static_cast<int>(GLFW_KEY_B) &&
+      action == static_cast<int>(GLFW_PRESS)) {
+    is_blinn = !is_blinn;
+    is_blinn ? TY_CORE_INFO("Blinn-Phong") : TY_CORE_INFO("Phong");
+  }
+  if (key == static_cast<int>(GLFW_KEY_G) &&
+      action == static_cast<int>(GLFW_PRESS)) {
+    is_gamma = !is_gamma;
+    is_gamma ? TY_CORE_INFO("gamma correction: ON")
+             : TY_CORE_INFO("gamma correction: OFF");
+  }
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos,
@@ -245,48 +265,41 @@ GLFWwindow* CreateGLFWWindow() {
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
-unsigned int loadTexture(char const* path, bool gammaCorrection)
-{
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
+unsigned int loadTexture(char const* path, bool gammaCorrection) {
+  unsigned int textureID;
+  glGenTextures(1, &textureID);
 
-    int width, height, nrComponents;
-    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        GLenum internalFormat;
-        GLenum dataFormat;
-        if (nrComponents == 1)
-        {
-            internalFormat = dataFormat = GL_RED;
-        }
-        else if (nrComponents == 3)
-        {
-            internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
-            dataFormat = GL_RGB;
-        }
-        else if (nrComponents == 4)
-        {
-            internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
-            dataFormat = GL_RGBA;
-        }
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
-        stbi_image_free(data);
+  int width, height, nrComponents;
+  unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+  if (data) {
+    GLenum internalFormat;
+    GLenum dataFormat;
+    if (nrComponents == 1) {
+      internalFormat = dataFormat = GL_RED;
+    } else if (nrComponents == 3) {
+      internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
+      dataFormat = GL_RGB;
+    } else if (nrComponents == 4) {
+      internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
+      dataFormat = GL_RGBA;
     }
 
-    return textureID;
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat,
+                 GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_image_free(data);
+  } else {
+    std::cout << "Texture failed to load at path: " << path << std::endl;
+    stbi_image_free(data);
+  }
+
+  return textureID;
 }
