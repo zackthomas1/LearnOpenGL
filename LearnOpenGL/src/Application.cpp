@@ -54,13 +54,13 @@ int main(void) {
   // Initialize models
   float planeVertices[] = {
       // positions            // normals         // texcoords
-      10.0f,  -0.5f, 10.0f,  0.0f, 1.0f, 0.0f, 10.0f, 0.0f,
-      -10.0f, -0.5f, 10.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f,
-      -10.0f, -0.5f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f,  10.0f,
+       10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f, 10.0f, 0.0f,
+      -10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f,
+      -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f, 0.0f,  10.0f,
 
-      10.0f,  -0.5f, 10.0f,  0.0f, 1.0f, 0.0f, 10.0f, 0.0f,
-      -10.0f, -0.5f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f,  10.0f,
-      10.0f,  -0.5f, -10.0f, 0.0f, 1.0f, 0.0f, 10.0f, 10.0f};
+       10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f, 10.0f, 0.0f,
+      -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f, 0.0f,  10.0f,
+       10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f, 10.0f, 10.0f};
   uint32_t vao, vbo;
   glGenVertexArrays(1, &vao);
   glGenBuffers(1, &vbo);
@@ -81,25 +81,22 @@ int main(void) {
   LearnOpenGL::Cube cube;
 
   // create shader programs
-  LearnOpenGL::Shader shader("../assets/shaders/5_3_shadow_map.vs",
-                             "../assets/shaders/5_3_shadow_map.fs");
+  LearnOpenGL::Shader blinn_shader("../assets/shaders/5_3_blinn_phong.vs",
+                             "../assets/shaders/5_3_blinn_phong.fs");
 
   // load textures
   uint32_t floorTexture = loadTexture("../assets/textures/wood.png", false);
   uint32_t floorTexture_gamma_correct =
       loadTexture("../assets/textures/wood.png", true);
 
-  shader.Use();
-  shader.SetInt("floorTexture", 0);
+  blinn_shader.Use();
+  blinn_shader.SetInt("floorTexture", 0);
 
   // lighting info
   // -------------
-  glm::vec3 lightPos(0.0f, 4.0f, 0.0f);
-  glm::vec3 lightColor(2.0f);
-
-  shader.Use();
-  shader.SetVec3("lightPos", lightPos);
-  shader.SetVec3("lightColor", lightColor);
+  blinn_shader.Use();
+  blinn_shader.SetVec3("lightDir", glm::vec3(2.0f, 4.0f, 1.0f));
+  blinn_shader.SetVec3("lightColor", glm::vec3(0.5f));
 
   // Render loop
   while (!glfwWindowShouldClose(window)) {
@@ -114,27 +111,28 @@ int main(void) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    shader.Use();
-    shader.SetMat4("view", camera.GetViewMatrix());
-    shader.SetMat4("projection", camera.GetProjectionMatrix());
-    shader.SetInt("isBlinn", is_blinn);
-    shader.SetInt("isGamma", is_gamma);
+    blinn_shader.Use();
+    blinn_shader.SetMat4("view", camera.GetViewMatrix());
+    blinn_shader.SetMat4("projection", camera.GetProjectionMatrix());
+    blinn_shader.SetVec3("viewPos", camera.GetPosition());
+    blinn_shader.SetInt("isBlinn", is_blinn);
+    blinn_shader.SetInt("isGamma", is_gamma);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,
                   is_gamma ? floorTexture_gamma_correct : floorTexture);
     
-    shader.SetVec4("translate", glm::vec4(0.0f, 2.0f, 2.0f, 0.0f));
+    blinn_shader.SetVec4("translate", glm::vec4(0.0f, 2.0f, 2.0f, 0.0f));
     cube.Draw();
 
-    shader.SetVec4("translate", glm::vec4(2.0f, 2.0f, 0.0f, 0.0f));
+    blinn_shader.SetVec4("translate", glm::vec4(2.0f, 2.0f, 0.0f, 0.0f));
     cube.Draw();
 
-    shader.SetVec4("translate", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+    blinn_shader.SetVec4("translate", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
     cube.Draw();
 
     // draw floor
-    shader.SetVec4("translate", glm::vec4(0.0f));
+    blinn_shader.SetVec4("translate", glm::vec4(0.0f));
     glBindVertexArray(vao);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,
