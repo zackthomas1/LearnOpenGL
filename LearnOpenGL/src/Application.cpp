@@ -84,19 +84,57 @@ int main(void) {
   LearnOpenGL::Shader blinn_shader("../assets/shaders/5_3_blinn_phong.vs",
                              "../assets/shaders/5_3_blinn_phong.fs");
 
+  LearnOpenGL::Shader shadow_map_shader("../assets/shaders/5_3_shadow_map.vs",
+      "../assets/shaders/5_3_shadow_map.fs");
+
   // load textures
   uint32_t floorTexture = loadTexture("../assets/textures/wood.png", false);
   uint32_t floorTexture_gamma_correct =
       loadTexture("../assets/textures/wood.png", true);
 
-  blinn_shader.Use();
-  blinn_shader.SetInt("floorTexture", 0);
+  // framebuffer
+  // -------------
+  uint32_t shadow_map_framebuffer; 
+  glGenFramebuffers(1, &shadow_map_framebuffer);
+
+  uint32_t shadow_map_texture; 
+  uint32_t shadow_map_width = 1024, shadow_map_height = 1024;
+  glGenTextures(1, &shadow_map_texture);
+  glBindTexture(GL_TEXTURE_2D, shadow_map_texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_map_width,
+               shadow_map_height, 0,
+               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
+
+  glBindFramebuffer(GL_FRAMEBUFFER, shadow_map_framebuffer);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                         shadow_map_texture, 0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // lighting info
   // -------------
+  float near_plane = 1.0f, far_plane = 7.5f;
+  glm::vec3 light_eye = glm::vec3(0.0f, 4.0f, 2.0f);
+  glm::vec3 world_center = glm::vec3(0.0f);
+  glm::mat4 lightProjection =
+      glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+  glm::mat4 lightView = glm::lookAt(light_eye, world_center,
+                                    glm::vec3(0.0, 1.0, 0.0));
+
   blinn_shader.Use();
-  blinn_shader.SetVec3("lightDir", glm::vec3(2.0f, 4.0f, 1.0f));
+  blinn_shader.SetInt("floorTexture", 0);
+  blinn_shader.SetInt("shadowMapTexture", 1); 
+  blinn_shader.SetVec3("lightDir", light_eye - world_center);
   blinn_shader.SetVec3("lightColor", glm::vec3(0.5f));
+  blinn_shader.SetMat4("lightSpaceMat", lightProjection * lightView);
+
+  shadow_map_shader.Use();
+  shadow_map_shader.SetMat4("lightSpaceMat", lightProjection * lightView);
 
   // Render loop
   while (!glfwWindowShouldClose(window)) {
@@ -106,6 +144,39 @@ int main(void) {
     // input
     ProcessInput(window, dt.delta_time());
 
+    // First pass, render to shadow map
+    glViewport(0, 0, shadow_map_width, shadow_map_height);
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow_map_framebuffer);
+    glDisable(GL_MULTISAMPLE);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    shadow_map_shader.Use();
+    { //scene
+      shadow_map_shader.SetMat4(
+          "model",
+          glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 2.0f, 1.0f)));
+      cube.Draw();
+
+      shadow_map_shader.SetMat4(
+          "model",
+          glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 2.0f)));
+      cube.Draw();
+
+      shadow_map_shader.SetMat4(
+          "model",
+          glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, -1.0f)));
+      cube.Draw();
+      
+      // draw floor
+      shadow_map_shader.SetMat4(
+          "model",
+                           glm::translate(glm::mat4(1.0f), glm::vec3(0.0f)));
+      glBindVertexArray(vao);
+      glDrawArrays(GL_TRIANGLES, 0, 6);
+    } //end scene
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Second pass, render scene with shadow map
+    glViewport(0, 0, kWidth, kHeight);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -121,23 +192,31 @@ int main(void) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,
                   is_gamma ? floorTexture_gamma_correct : floorTexture);
-    
-    blinn_shader.SetVec4("translate", glm::vec4(0.0f, 2.0f, 2.0f, 0.0f));
-    cube.Draw();
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, shadow_map_texture);
+    {  // scene    
+      blinn_shader.SetMat4(
+        "model",
+        glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 2.0f, 1.0f)));
+      cube.Draw();
 
-    blinn_shader.SetVec4("translate", glm::vec4(2.0f, 2.0f, 0.0f, 0.0f));
-    cube.Draw();
+      blinn_shader.SetMat4(
+          "model",
+          glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 2.0f)));
+      cube.Draw();
 
-    blinn_shader.SetVec4("translate", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
-    cube.Draw();
+      blinn_shader.SetMat4(
+          "model",
+          glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, -1.0f)));
+      cube.Draw();
 
-    // draw floor
-    blinn_shader.SetVec4("translate", glm::vec4(0.0f));
-    glBindVertexArray(vao);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D,
-                  is_gamma ? floorTexture_gamma_correct : floorTexture);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+      // draw floor
+      blinn_shader.SetMat4(
+          "model",
+          glm::translate(glm::mat4(1.0f), glm::vec3(0.0f)));
+      glBindVertexArray(vao);
+      glDrawArrays(GL_TRIANGLES, 0, 6);
+    }  // end scene
 
     // check and call events and swap buffers
     glfwPollEvents();
