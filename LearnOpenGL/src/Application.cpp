@@ -51,7 +51,8 @@ int main(void) {
   GLFWwindow* window = CreateGLFWWindow();
   if (window == nullptr) return -1;
 
-  // Initialize models
+  // Models
+  // -------------
   float planeVertices[] = {
       // positions            // normals         // texcoords
        10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f, 10.0f, 0.0f,
@@ -80,17 +81,19 @@ int main(void) {
 
   LearnOpenGL::Cube cube;
 
-  // create shader programs
+  // Textures
+  // -------------
+  uint32_t floorTexture = loadTexture("../assets/textures/wood.png", false);
+  uint32_t floorTexture_gamma_correct =
+      loadTexture("../assets/textures/wood.png", true);
+
+  // Shaders
+  // -------------
   LearnOpenGL::Shader blinn_shader("../assets/shaders/5_3_blinn_phong.vs",
                              "../assets/shaders/5_3_blinn_phong.fs");
 
   LearnOpenGL::Shader shadow_map_shader("../assets/shaders/5_3_shadow_map.vs",
       "../assets/shaders/5_3_shadow_map.fs");
-
-  // load textures
-  uint32_t floorTexture = loadTexture("../assets/textures/wood.png", false);
-  uint32_t floorTexture_gamma_correct =
-      loadTexture("../assets/textures/wood.png", true);
 
   // framebuffer
   // -------------
@@ -106,8 +109,12 @@ int main(void) {
                GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER); 
+  // Configure a texture border color. Whenever smple outside depth map's [0,1] coordinate range, 
+  // texture function will return a depth of 1.0 producing shadow values of 0.0
+  float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
   glBindFramebuffer(GL_FRAMEBUFFER, shadow_map_framebuffer);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
@@ -119,17 +126,17 @@ int main(void) {
   // lighting info
   // -------------
   float near_plane = 1.0f, far_plane = 7.5f;
-  glm::vec3 light_eye = glm::vec3(0.0f, 4.0f, 2.0f);
-  glm::vec3 world_center = glm::vec3(0.0f);
+  glm::vec3 light_eye = glm::vec3(-2.0f, 4.0f, -1.0f);
   glm::mat4 lightProjection =
       glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-  glm::mat4 lightView = glm::lookAt(light_eye, world_center,
-                                    glm::vec3(0.0, 1.0, 0.0));
+  glm::mat4 lightView = glm::lookAt(light_eye, 
+    glm::vec3(0.0f),
+    glm::vec3(0.0f, 1.0f, 0.0f));
 
   blinn_shader.Use();
   blinn_shader.SetInt("floorTexture", 0);
-  blinn_shader.SetInt("shadowMapTexture", 1); 
-  blinn_shader.SetVec3("lightDir", light_eye - world_center);
+  blinn_shader.SetInt("shadowMapTexture", 1);
+  blinn_shader.SetVec3("lightPos", light_eye);
   blinn_shader.SetVec3("lightColor", glm::vec3(0.5f));
   blinn_shader.SetMat4("lightSpaceMat", lightProjection * lightView);
 
@@ -147,7 +154,10 @@ int main(void) {
     // First pass, render to shadow map
     glViewport(0, 0, shadow_map_width, shadow_map_height);
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_map_framebuffer);
-    glDisable(GL_MULTISAMPLE);
+    // enable front face culling to address peter panning artifact. Does not
+    // matter for solid objects whether we take depth of front or back faces.
+    // Using back faces doesn't give wrong results
+    glCullFace(GL_FRONT);
     glClear(GL_DEPTH_BUFFER_BIT);
     shadow_map_shader.Use();
     { //scene
@@ -169,11 +179,12 @@ int main(void) {
       // draw floor
       shadow_map_shader.SetMat4(
           "model",
-                           glm::translate(glm::mat4(1.0f), glm::vec3(0.0f)));
+          glm::translate(glm::mat4(1.0f), glm::vec3(0.0f)));
       glBindVertexArray(vao);
       glDrawArrays(GL_TRIANGLES, 0, 6);
     } //end scene
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glCullFace(GL_BACK);
 
     // Second pass, render scene with shadow map
     glViewport(0, 0, kWidth, kHeight);
@@ -188,13 +199,14 @@ int main(void) {
     blinn_shader.SetVec3("viewPos", camera.GetPosition());
     blinn_shader.SetInt("isBlinn", is_blinn);
     blinn_shader.SetInt("isGamma", is_gamma);
+    
+    {  // scene
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D,
+                    is_gamma ? floorTexture_gamma_correct : floorTexture);
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, shadow_map_texture);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D,
-                  is_gamma ? floorTexture_gamma_correct : floorTexture);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, shadow_map_texture);
-    {  // scene    
       blinn_shader.SetMat4(
         "model",
         glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 2.0f, 1.0f)));
